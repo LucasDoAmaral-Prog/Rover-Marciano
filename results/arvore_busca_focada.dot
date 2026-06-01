@@ -1,0 +1,127 @@
+digraph ArvoreBuscaAStar {
+	nodesep=0.45 rankdir=TB ranksep=0.75 splines=true
+	node [color=black fontname=Arial fontsize=10 shape=ellipse style=filled]
+	edge [color="#555555" fontname=Arial fontsize=9]
+	S1 [label="C10
+31,48 = 2,00 + 29,48
+b=98% K={C10}" fillcolor="#d9d9d9"]
+	S2 [label="C11
+64,86 = 24,00 + 40,86
+b=76% K={C10,C11}" fillcolor="#d9d9d9"]
+	S1 -> S2 [label="20 + coleta"]
+	S3 [label="C10
+70,48 = 44,00 + 26,48
+b=56% K={C10,C11}" fillcolor="#d9d9d9"]
+	S2 -> S3 [label=20]
+	S4 [label="C4
+OBJETIVO
+72,00 = 72,00 + 0,00
+b=28% K={C10,C11,C4}" fillcolor="#b6f2b6" peripheries=2]
+	S3 -> S4 [label="26 + coleta"]
+	S5 [label="C4
+33,00 = 30,00 + 3,00
+b=70% K={C10,C4}" fillcolor="#d9d9d9"]
+	S1 -> S5 [label="26 + coleta"]
+	A1 [label="R1
+78,48 = 52,00 + 26,48
+b=48% K={C10,C4}" fillcolor=white]
+	S5 -> A1 [label=22]
+	A2 [label="R2
+74,49 = 47,00 + 27,49
+b=53% K={C10,C4}" fillcolor=white]
+	S5 -> A2 [label=17]
+	A3 [label="C10
+82,48 = 56,00 + 26,48
+b=44% K={C10,C4}" fillcolor=white]
+	S5 -> A3 [label=26]
+	S6 [label="C9
+67,70 = 35,00 + 32,70
+b=65% K={C10,C9}" fillcolor="#d9d9d9"]
+	S1 -> S6 [label="31 + coleta"]
+	A4 [label="C1
+92,50 = 61,00 + 31,50
+b=39% K={C1,C10,C9}" fillcolor=white]
+	S6 -> A4 [label="24 + coleta"]
+	A5 [label="R3
+87,20 = 51,00 + 36,20
+b=49% K={C10,C9}" fillcolor=white]
+	S6 -> A5 [label=16]
+	A6 [label="C10
+92,48 = 66,00 + 26,48
+b=34% K={C10,C9}" fillcolor=white]
+	S6 -> A6 [label=31]
+	S7 [label="R6
+46,49 = 16,00 + 30,49
+b=84% K={C10}" fillcolor="#d9d9d9"]
+	S1 -> S7 [label=14]
+	A7 [label="R6
+46,49 = 16,00 + 30,49
+b=100% K={C10}
+recarga" fillcolor=white]
+	S7 -> A7 [label="recarga 3,2"]
+	A8 [label="C6
+55,00 = 31,00 + 24,00
+b=69% K={C10,C6}" fillcolor=white]
+	S7 -> A8 [label="13 + coleta"]
+	A9 [label="C10
+59,48 = 30,00 + 29,48
+b=70% K={C10}" fillcolor=white]
+	S7 -> A9 [label=14]
+	A10 [label="C11
+75,86 = 35,00 + 40,86
+b=65% K={C10,C11}" fillcolor=white]
+	S7 -> A10 [label="17 + coleta"]
+	A11 [label="C13
+73,00 = 28,00 + 45,00
+b=72% K={C10,C13}" fillcolor=white]
+	S1 -> A11 [label="24 + coleta"]
+	A12 [label="C7
+93,00 = 51,00 + 42,00
+b=49% K={C10,C11,C7}" fillcolor=white]
+	S2 -> A12 [label="25 + coleta"]
+	S8 [label="R6
+68,49 = 41,00 + 27,49
+b=59% K={C10,C11}" fillcolor="#d9d9d9"]
+	S2 -> S8 [label=17]
+	A13 [label="R6
+68,49 = 41,00 + 27,49
+b=100% K={C10,C11}
+recarga" fillcolor=white]
+	S8 -> A13 [label="recarga 8,2"]
+	A14 [label="C6
+77,00 = 56,00 + 21,00
+b=44% K={C10,C11,C6}" fillcolor=white]
+	S8 -> A14 [label="13 + coleta"]
+	A15 [label="C10
+81,48 = 55,00 + 26,48
+b=45% K={C10,C11}" fillcolor=white]
+	S8 -> A15 [label=14]
+	A16 [label="C11
+98,86 = 58,00 + 40,86
+b=42% K={C10,C11}" fillcolor=white]
+	S8 -> A16 [label=17]
+	A17 [label="C12
+103,54 = 47,00 + 56,54
+b=53% K={C10,C11,C12}" fillcolor=white]
+	S2 -> A17 [label="21 + coleta"]
+	A18 [label="C14
+106,50 = 54,00 + 52,50
+b=46% K={C10,C11,C14}" fillcolor=white]
+	S2 -> A18 [label="28 + coleta"]
+	A19 [label="C9
+106,70 = 77,00 + 29,70
+b=23% K={C10,C11,C9}" fillcolor=white]
+	S3 -> A19 [label="31 + coleta"]
+	A20 [label="R6
+85,49 = 58,00 + 27,49
+b=42% K={C10,C11}" fillcolor=white]
+	S3 -> A20 [label=14]
+	A21 [label="C11
+104,86 = 64,00 + 40,86
+b=36% K={C10,C11}" fillcolor=white]
+	S3 -> A21 [label=20]
+	A22 [label="C13
+112,00 = 70,00 + 42,00
+b=30% K={C10,C11,C13}" fillcolor=white]
+	S3 -> A22 [label="24 + coleta"]
+}
