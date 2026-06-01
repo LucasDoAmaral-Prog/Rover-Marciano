@@ -290,33 +290,6 @@ O projeto ja gera um relatorio visual em HTML, que pode ser usado como material 
 results/resultado_busca.html
 ```
 
-Sugestao de materiais para entrega academica ou portfolio:
-
-| Material | Como usar |
-|---|---|
-| Relatorio interativo | Abrir `results/resultado_busca.html` no navegador. |
-| PDF | Abrir o HTML e imprimir em "Salvar como PDF". |
-| Video demonstrativo | Gravar a execucao no terminal e a navegacao pelo relatorio HTML. |
-| Apresentacao | Usar as tabelas de heuristica, metricas e arvores geradas em `results/`. |
-
-Roteiro sugerido para video:
-
-| Tempo | Conteudo |
-|---|---|
-| 0:00 - 0:30 | Apresentar o problema: rover, grafo, bateria, coletas e objetivo. |
-| 0:30 - 1:20 | Explicar a modelagem do estado e as restricoes da missao. |
-| 1:20 - 2:20 | Mostrar o algoritmo A* e a funcao `f(n) = g(n) + h(n)`. |
-| 2:20 - 3:30 | Comparar `h5` admissivel e `h4` inflada. |
-| 3:30 - 4:30 | Executar `python main.py` e mostrar o caminho encontrado. |
-| 4:30 - 5:30 | Navegar pelo HTML, arvores de busca e metricas finais. |
-| 5:30 - 6:00 | Concluir com as competencias tecnicas demonstradas. |
-
-Quando houver um video publicado, adicione o link aqui:
-
-```text
-Video demonstrativo: <link-do-video>
-```
-
 ## Competencias demonstradas
 
 | Area | Evidencia no projeto |
