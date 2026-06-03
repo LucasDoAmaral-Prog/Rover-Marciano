@@ -2,7 +2,7 @@
 
 Projeto academico de Inteligencia Artificial para planejamento de rota de um rover em um ambiente marciano modelado como grafo. O sistema utiliza o algoritmo A* para encontrar uma rota ate um objetivo, respeitando restricoes de bateria, pontos de coleta e estacoes de recarga.
 
-O projeto tambem gera uma visualizacao interativa em HTML e arvores de busca em SVG/PNG, permitindo analisar o comportamento do algoritmo, comparar heuristicas e observar o impacto entre otimalidade e reducao de expansoes.
+O projeto tambem gera uma visualizacao interativa em HTML e arvores de busca em SVG, permitindo analisar o comportamento do algoritmo, comparar heuristicas e observar o impacto entre otimalidade e reducao de expansoes.
 
 ## Sumario
 
@@ -38,7 +38,7 @@ A solucao desejada e um caminho que minimize o tempo total da missao, consideran
 | Requisito | Finalidade | Observacao |
 |---|---|---|
 | Python 3.10+ | Executar o algoritmo e gerar as saidas | O projeto foi validado com Python 3.13.1. |
-| Graphviz | Renderizar as arvores de busca em SVG/PNG | Necessario para as imagens geradas automaticamente. |
+| Graphviz | Renderizar as arvores de busca em SVG | Necessario para as imagens geradas automaticamente. |
 | `graphviz` Python package | Interface Python para gerar arquivos Graphviz | Instalado por `requirements.txt`. |
 
 ### 2. Baixar o projeto
@@ -123,7 +123,7 @@ python main.py --tree-depth 2
 |---|---:|---|
 | `--start` | `C10` | No inicial do rover. |
 | `--goal` | `C4` | No objetivo final da missao. |
-| `--output-dir` | `results` | Pasta onde serao salvos HTML, SVG, PNG e DOT. |
+| `--output-dir` | `results` | Pasta onde serao salvos HTML, SVG e DOT. |
 | `--tree-depth` | `3` | Profundidade maxima exibida no terminal para evitar poluicao visual. |
 
 ## Como acessar os resultados
@@ -133,12 +133,22 @@ Apos executar `python main.py`, os principais artefatos ficam em `results/`.
 | Arquivo | Finalidade |
 |---|---|
 | `results/resultado_busca.html` | Relatorio visual interativo com mapa, caminho, metricas, comparacao de heuristicas e historico da busca. |
-| `results/arvore_busca_focada_h5.svg` | Arvore focada da busca com a heuristica admissivel `h5`. |
-| `results/arvore_busca_completa_h5.svg` | Arvore completa da busca com a heuristica admissivel `h5`. |
-| `results/arvore_busca_focada_h4.svg` | Arvore focada da busca com a heuristica inflada `h4`. |
-| `results/arvore_busca_completa_h4.svg` | Arvore completa da busca com a heuristica inflada `h4`. |
-| `results/*.png` | Imagens renderizadas para consulta rapida ou uso em apresentacoes. |
+| `results/arvore_busca_focada_h5.svg` | Arvore focada da `h5`: caminho final + principais alternativas imediatas. |
+| `results/arvore_busca_completa_h5.svg` | Arvore completa compactada da `h5`, limitada para apresentacao. |
+| `results/arvore_busca_focada_h4.svg` | Arvore focada da `h4`: caminho final + principais alternativas imediatas. |
+| `results/arvore_busca_completa_h4.svg` | Arvore completa compactada da `h4`, limitada para comparacao visual. |
 | `results/*.dot` | Representacao textual Graphviz das arvores. |
+
+Na arvore focada, azul indica o caminho escolhido, branco indica no gerado/Open
+e cinza indica no expandido/Closed. Nas arvores compactadas, as caixas amarelas
+indicam ramos omitidos por limite visual: estados que foram gerados durante a
+execucao, mas nao foram desenhados para evitar uma figura excessivamente grande
+e dificil de ler. Isso nao e poda do algoritmo; e apenas compactacao visual. A
+execucao do A*, as listas Open/Closed e as metricas reais continuam considerando
+esses estados normalmente.
+
+As contagens de estados expandidos sao obtidas da Closed List real da execucao,
+nao da quantidade de nos desenhados na arvore compactada.
 
 Para visualizar o relatorio, abra o arquivo:
 
@@ -259,10 +269,10 @@ Configuracao padrao:
 
 Comparacao entre heuristicas:
 
-| Heuristica | Tipo | Tempo total | Bateria final | Coletas | Estados expandidos | Nos na arvore |
+| Heuristica | Tipo | Tempo total | Bateria final | Coletas | Estados expandidos | Nos gerados |
 |---|---|---:|---:|---:|---:|---:|
-| `h5` | Admissivel | `68.00 min` | `32.0%` | `3` | `30` | `112` |
-| `h4` | Inflada, nao admissivel | `72.00 min` | `28.0%` | `3` | `18` | `69` |
+| `h5` | Admissivel | `68.00 min` | `32.0%` | `3` | `14` | `49` |
+| `h4` | Inflada, nao admissivel | `72.00 min` | `28.0%` | `3` | `9` | `27` |
 
 Interpretacao:
 

@@ -64,7 +64,7 @@ def print_problem_configuration(graph, start_node, goal_node):
     print()
 
 
-def print_result(result, graph, goal_node):
+def print_result(result, graph, goal_node, heuristic_func=h5, heuristic_label="h5", path_title="CAMINHO FINAL"):
     if not result.success:
         print_separator()
         print("  RESULTADO: NENHUMA SOLUCAO ENCONTRADA")
@@ -83,21 +83,25 @@ def print_result(result, graph, goal_node):
     print(f"  Estados expandidos:      {result.expanded_states}")
     print(f"  Tam. lista aberta:       {result.open_list_size}")
     print(f"  Tam. lista fechada:      {result.closed_list_size}")
-    print(f"  Nos na arvore de busca:  {len(result.search_tree)}")
+    print(f"  Nos gerados na busca:    {len(result.search_tree)}")
     print_separator()
     print()
 
-    print("  CAMINHO OTIMO:")
+    print(f"  {path_title}:")
     print("-" * 60)
 
     for step_index, step in enumerate(result.path):
         state = step["state"]
-        heuristic_value = h5(graph, state, goal_node)
+        heuristic_value = heuristic_func(graph, state, goal_node)
         f_value = step["g"] + heuristic_value
 
         print(f"  Passo {step_index}: {state}")
         print(f"    Acao:  {step['action']}")
-        print(f"    g(n)={step['g']:.2f}  h5(n)={heuristic_value:.2f}  f(n)={f_value:.2f}")
+        print(
+            f"    g(n)={step['g']:.2f}  "
+            f"{heuristic_label}(n)={heuristic_value:.2f}  "
+            f"f(n)={f_value:.2f}"
+        )
 
         if step_index < len(result.path) - 1:
             print(f"    {'|':>6}")
@@ -111,7 +115,9 @@ def print_tree_section(result, max_depth):
     print("  ARVORE DE BUSCA (*** = caminho solucao)")
     if max_depth is not None:
         print(f"  (Mostrando apenas profundidade maxima = {max_depth} para nao poluir o terminal)")
-        print("  (Acesse as imagens SVG ou o HTML gerado para ver a arvore completa!)")
+        print("  (Ramos omitidos sao limite visual: estados gerados, mas nao desenhados aqui.)")
+        print("  (Isso nao e poda do A*: Open/Closed e metricas reais nao mudam.)")
+        print("  (Acesse as imagens SVG ou o HTML gerado para ver a arvore compactada.)")
     print_separator()
     print_search_tree(result, max_depth=max_depth)
     print_separator()
@@ -135,11 +141,26 @@ def main():
 
     print("=== EXECUTANDO COM HEURISTICA ADMISSIVEL (h5) ===")
     result_h5 = search.search(start_node, goal_node, heuristic_func=h5)
-    print_result(result_h5, graph, goal_node)
+    print_result(
+        result_h5,
+        graph,
+        goal_node,
+        heuristic_func=h5,
+        heuristic_label="h5",
+        path_title="CAMINHO OTIMO (h5)",
+    )
     
     print("=== EXECUTANDO COM HEURISTICA INFLADA NAO ADMISSIVEL (h4) ===")
-    result_h4 = search.search(start_node, goal_node, heuristic_func=partial(h4, alpha=1.5))
-    print_result(result_h4, graph, goal_node)
+    h4_func = partial(h4, alpha=1.5)
+    result_h4 = search.search(start_node, goal_node, heuristic_func=h4_func)
+    print_result(
+        result_h4,
+        graph,
+        goal_node,
+        heuristic_func=h4_func,
+        heuristic_label="h4",
+        path_title="CAMINHO FINAL (h4, sem garantia de otimalidade)",
+    )
     
     # Gerar a arvore com o result_h5 para manter compatibilidade com o log no terminal
     print_tree_section(result_h5, max_depth=args.tree_depth)
@@ -155,7 +176,7 @@ def main():
         graph, result_h5, start_node, goal_node, output_dir=args.output_dir,
     )
     if img_completa:
-        print(f"  Imagem da arvore completa (h5): {img_completa}")
+        print(f"  Imagem da arvore completa compactada (h5): {img_completa}")
 
     html_out = os.path.join(args.output_dir, "resultado_busca.html")
     html_path = generate_html(

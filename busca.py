@@ -1,4 +1,5 @@
 import heapq
+import math
 from dataclasses import dataclass, field
 
 from config import (
@@ -86,7 +87,11 @@ class AStarSearch:
 
             if current_state in closed_list:
                 continue
-                
+
+            current_g = g_score[current_state]
+            if self._is_dominated(current_state, current_g, g_score):
+                continue
+
             step += 1
             
             # Se o nó entrou na open_list num passo bem anterior ao passo atual (com atraso > 1)
@@ -101,17 +106,19 @@ class AStarSearch:
             if self._is_goal_state(current_state, goal_node):
                 path = self._reconstruct_path(current_state, parents, g_score)
 
-                # Mark edges that belong to the solution path using original states
-                solution_states = set()
-                for step_dict in path:
-                    solution_states.add(step_dict.get("original_state", step_dict["state"]))
+                # Mark only the parent-child transitions used by the final path.
+                solution_states = {step_dict["state"] for step_dict in path}
+                solution_edges = set()
+                for i in range(1, len(path)):
+                    solution_edges.add((path[i - 1]["state"], path[i]["state"]))
+
                 for edge in search_tree:
-                    if (edge.child_state in solution_states
-                            and (edge.parent_state is None
-                                 or edge.parent_state in solution_states)):
+                    if (
+                        edge.parent_state is None
+                        and edge.child_state in solution_states
+                    ) or (edge.parent_state, edge.child_state) in solution_edges:
                         edge.in_solution = True
 
-                # total_time agora vem do ultimo passo reconstruido (inclui recarga parcial)
                 final_total_time = path[-1]["g"] if path else g_score[current_state]
                 final_state_reconstructed = path[-1]["state"] if path else current_state
 
@@ -119,7 +126,7 @@ class AStarSearch:
                     path=path,
                     total_time=final_total_time,
                     expanded_states=len(closed_list),
-                    open_list_size=len(open_list),
+                    open_list_size=len(self._active_open_states(open_list, closed_list, g_score)),
                     closed_list_size=len(closed_list),
                     success=True,
                     search_tree=search_tree,
@@ -132,7 +139,14 @@ class AStarSearch:
 
             closed_list.add(current_state)
 
-            for next_state, action_cost, action_description in self._generate_successors(current_state):
+            previous_action = parents[current_state][1]
+            allow_recharge = "recarregar" not in previous_action
+
+            for next_state, action_cost, action_description in self._generate_successors(
+                current_state,
+                goal_node,
+                allow_recharge=allow_recharge,
+            ):
                 if next_state in closed_list:
                     continue
 
@@ -141,16 +155,10 @@ class AStarSearch:
                 
                 new_f = new_g + h_value
 
-                search_tree.append(TreeEdge(
-                    parent_state=current_state,
-                    child_state=next_state,
-                    action=action_description,
-                    g=new_g,
-                    h=h_value,
-                    f=new_f,
-                ))
-
                 if new_g < g_score.get(next_state, float("inf")):
+                    if self._is_dominated(next_state, new_g, g_score):
+                        continue
+
                     # Capturar nó revisitado na open list (ignorando diferenças microscópicas de float)
                     if next_state in g_score and next_state not in closed_list:
                         if g_score[next_state] - new_g > 0.01:
@@ -163,14 +171,27 @@ class AStarSearch:
                         
                     g_score[next_state] = new_g
                     parents[next_state] = (current_state, action_description)
-                    added_at_step.setdefault(next_state, step)
+                    added_at_step[next_state] = step
+
+                    search_tree.append(TreeEdge(
+                        parent_state=current_state,
+                        child_state=next_state,
+                        action=action_description,
+                        g=new_g,
+                        h=h_value,
+                        f=new_f,
+                    ))
 
                     counter += 1
                     heapq.heappush(open_list, (new_f, counter, next_state))
                     
             # Registrar snapshots no final da expansão do nó
-            open_list_history.append([str(item[2]) for item in open_list])
-            closed_list_history.append([str(st) for st in closed_list])
+            open_list_history.append(
+                self._format_state_list(open_list, closed_list, g_score, heuristic_func, goal_node)
+            )
+            closed_list_history.append(
+                self._format_state_list(closed_list, set(), g_score, heuristic_func, goal_node)
+            )
 
         return SearchResult(
             path=[],
@@ -216,24 +237,36 @@ class AStarSearch:
             and len(state.collected_points) >= MIN_COLLECTIONS
         )
 
-    def _generate_successors(self, state):
+    def _generate_successors(self, state, goal_node, allow_recharge=True):
         successors = []
 
         # Acao 1: recarregar.
-        # Ela so existe em nos R. Para evitar muitas recargas pequenas em sequencia,
-        # a acao de recarga leva a bateria diretamente ate 100%.
-        # Exemplo: sair de 80% para 100% recupera 20%, custando 20 / 5 = 4 min.
-        if self.graph.is_recharge_node(state.current_node) and state.battery_level < MAX_BATTERY:
-            recharge_time = 0.0 # O tempo real será recalculado no final (optimal partial recharge)
+        # Gera estados explicitos de recarga parcial com custo real.
+        # Em vez de tentar todos os percentuais ate 100, usa apenas niveis
+        # de bateria que permitem alcancar algum ponto relevante antes da
+        # proxima recarga. Isso preserva a recarga parcial e reduz a explosao.
+        if (
+            allow_recharge
+            and self.graph.is_recharge_node(state.current_node)
+            and state.battery_level < MAX_BATTERY
+        ):
+            for target_battery in self._useful_recharge_targets(state, goal_node):
+                recharge_amount = target_battery - state.battery_level
+                if recharge_amount <= 0:
+                    continue
 
-            next_state = State(
-                current_node=state.current_node,
-                battery_level=MAX_BATTERY,
-                collected_points=state.collected_points,
-            )
+                recharge_time = recharge_amount / RECHARGE_RATE
+                next_state = State(
+                    current_node=state.current_node,
+                    battery_level=target_battery,
+                    collected_points=state.collected_points,
+                )
 
-            action = f"recarregar em {state.current_node} (max exploratorio)"
-            successors.append((next_state, recharge_time, action))
+                action = (
+                    f"recarregar em {state.current_node} "
+                    f"{recharge_amount:.1f}% ({recharge_time:.1f} min)"
+                )
+                successors.append((next_state, recharge_time, action))
 
         # Acao 2: mover para um vizinho conectado por aresta.
         # O peso da aresta e tempo real de deslocamento em minutos.
@@ -278,74 +311,137 @@ class AStarSearch:
 
         return successors
 
+    def _useful_recharge_targets(self, state, goal_node):
+        targets = set()
+        best_goal_target = None
+        start_key = (state.current_node, state.collected_points)
+        frontier = [(0, state.current_node, state.collected_points)]
+        best_cost = {start_key: 0}
+
+        while frontier:
+            battery_cost, node, collected_points = heapq.heappop(frontier)
+            key = (node, collected_points)
+            if battery_cost > best_cost.get(key, float("inf")):
+                continue
+
+            for neighbor, travel_time in self.graph.get_neighbors(node):
+                next_collected = set(collected_points)
+                step_cost = travel_time
+                can_collect = (
+                    self.graph.is_collection_node(neighbor)
+                    and neighbor not in next_collected
+                    and len(next_collected) < MIN_COLLECTIONS
+                )
+                if can_collect:
+                    step_cost += COLLECTION_TIME
+                    next_collected.add(neighbor)
+
+                next_cost = battery_cost + step_cost
+                target_battery = math.ceil(next_cost + MIN_BATTERY)
+                if target_battery > MAX_BATTERY:
+                    continue
+
+                next_collected = frozenset(next_collected)
+
+                if (
+                    neighbor == goal_node
+                    and len(next_collected) >= MIN_COLLECTIONS
+                ):
+                    if best_goal_target is None or target_battery < best_goal_target:
+                        best_goal_target = target_battery
+                    continue
+
+                # Ao chegar em outra estacao, o A* pode decidir recarregar la.
+                # Continuar alem dela so recriaria opcoes equivalentes.
+                if self.graph.is_recharge_node(neighbor):
+                    if neighbor != state.current_node and target_battery > state.battery_level:
+                        targets.add(target_battery)
+                    continue
+
+                next_key = (neighbor, next_collected)
+                if next_cost < best_cost.get(next_key, float("inf")):
+                    best_cost[next_key] = next_cost
+                    heapq.heappush(frontier, (next_cost, neighbor, next_collected))
+
+        if best_goal_target is not None:
+            if best_goal_target <= state.battery_level:
+                return []
+
+            targets = {target for target in targets if target < best_goal_target}
+            targets.add(best_goal_target)
+
+        return sorted(targets)
+
+    def _is_dominated(self, state, g_value, g_score):
+        for other_state, other_g in g_score.items():
+            if other_state == state:
+                continue
+
+            if (
+                other_state.current_node != state.current_node
+                or other_state.collected_points != state.collected_points
+            ):
+                continue
+
+            if (
+                other_state.battery_level >= state.battery_level
+                and other_g <= g_value + 1e-9
+            ):
+                return True
+
+        return False
+
+    def _active_open_states(self, open_list, closed_list, g_score):
+        states = []
+        seen = set()
+
+        for _, _, state in open_list:
+            if state in closed_list or state in seen:
+                continue
+            if self._is_dominated(state, g_score.get(state, float("inf")), g_score):
+                continue
+
+            seen.add(state)
+            states.append(state)
+
+        return states
+
     def _reconstruct_path(self, final_state, parents, g_score):
-        from config import RECHARGE_RATE, MIN_BATTERY
-        raw_path = []
+        path = []
         current_state = final_state
 
         while current_state is not None:
             previous_state, action = parents[current_state]
-            raw_path.append({
+            path.append({
                 "state": current_state,
                 "action": action,
-                "raw_g": g_score[current_state],
+                "g": round(g_score[current_state], 4),
             })
             current_state = previous_state
 
-        raw_path.reverse()
+        path.reverse()
+        return path
 
-        needed_battery = MIN_BATTERY
+    def _format_state_list(self, states_source, closed_list, g_score, heuristic_func, goal_node):
+        if isinstance(states_source, list):
+            states = self._active_open_states(states_source, closed_list, g_score)
+        else:
+            states = sorted(
+                states_source,
+                key=lambda state: (
+                    state.current_node,
+                    state.battery_level,
+                    tuple(sorted(state.collected_points)),
+                ),
+            )
 
-        for i in range(len(raw_path) - 1, 0, -1):
-            curr_step = raw_path[i]
-            prev_step = raw_path[i - 1]
+        items = []
+        for state in states:
+            g_value = g_score.get(state, float("inf"))
+            h_value = heuristic_func(self.graph, state, goal_node)
+            f_value = g_value + h_value
+            items.append(
+                f"{state} | g={g_value:.1f} h={h_value:.1f} f={f_value:.1f}"
+            )
 
-            action = curr_step["action"]
-
-            if "mover" in action:
-                cost = curr_step["raw_g"] - prev_step["raw_g"]
-                needed_battery += cost
-            elif "recarregar" in action:
-                arriving_battery = prev_step["state"].battery_level
-
-                if needed_battery > arriving_battery:
-                    recharge_amount = needed_battery - arriving_battery
-                    recharge_time = recharge_amount / RECHARGE_RATE
-
-                    curr_step["action"] = f"recarregar em {curr_step['state'].current_node} {recharge_amount:.1f}% ({recharge_time:.1f} min)"
-                    curr_step["recharge_time"] = recharge_time
-                    curr_step["recharge_amount"] = recharge_amount
-
-                    needed_battery = arriving_battery
-                else:
-                    curr_step["action"] = f"recarregar em {curr_step['state'].current_node} (ignorada, bateria suficiente)"
-                    curr_step["recharge_time"] = 0.0
-                    curr_step["recharge_amount"] = 0.0
-
-        final_path = []
-        current_g = raw_path[0]["raw_g"]
-        current_battery = raw_path[0]["state"].battery_level
-
-        for i, step in enumerate(raw_path):
-            if i > 0:
-                action = step["action"]
-                if "mover" in action:
-                    cost = step["raw_g"] - raw_path[i - 1]["raw_g"]
-                    current_g += cost
-                    current_battery -= cost
-                elif "recarregar" in action:
-                    current_g += step.get("recharge_time", 0.0)
-                    current_battery += step.get("recharge_amount", 0.0)
-
-            # Manter arredondamentos sanos
-            current_battery = round(current_battery, 4)
-            current_g = round(current_g, 4)
-
-            final_path.append({
-                "state": State(step["state"].current_node, current_battery, step["state"].collected_points),
-                "original_state": step["state"],  # estado original da busca (para lookup na arvore)
-                "action": step["action"],
-                "g": current_g,
-            })
-
-        return final_path
+        return items

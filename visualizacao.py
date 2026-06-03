@@ -1,8 +1,8 @@
 """
 visualizacao.py - Gera as saídas visuais para o algoritmo de busca A*
 1. Árvore de texto no console
-2. Árvore focada em imagem (caminho ótimo + irmãos)
-3. Árvore completa em imagem (todos os nós explorados)
+2. Árvore focada em imagem (caminho ótimo + alternativas imediatas)
+3. Árvore completa compactada em imagem (visão apresentável da busca)
 4. Página HTML interativa com mapa, painel e imagens embutidas.
 
 Gerado com o auxílio de Inteligência Artificial.
@@ -27,7 +27,7 @@ from config import (
 # 1. Impressão no Console (Árvore de Busca)
 # ═══════════════════════════════════════════════════════════════════════════
 
-def print_search_tree(result, max_depth=None):
+def print_search_tree(result, max_depth=None, max_children=4):
     """Imprime a hierarquia da árvore de busca no console."""
     if not result.search_tree:
         print("  (arvore vazia)")
@@ -49,7 +49,26 @@ def print_search_tree(result, max_depth=None):
     solution_states = set()
     if result.success:
         for step in result.path:
-            solution_states.add(step.get("original_state", step["state"]))
+            solution_states.add(step["state"])
+
+    def _select_console_children(child_edges):
+        if max_children is None or len(child_edges) <= max_children:
+            return child_edges, 0
+
+        selected = []
+        for child_edge in child_edges:
+            if child_edge.child_state in solution_states:
+                selected.append(child_edge)
+                break
+
+        for child_edge in child_edges:
+            if child_edge in selected:
+                continue
+            if len(selected) >= max_children:
+                break
+            selected.append(child_edge)
+
+        return selected, len(child_edges) - len(selected)
 
     def _print_node(edge, prefix, is_last, depth):
         if max_depth is not None and depth > max_depth:
@@ -68,9 +87,12 @@ def print_search_tree(result, max_depth=None):
             line += f"  <- {edge.action}"
         print(line)
         child_edges = sorted(children_map.get(state, []), key=lambda e: e.f)
+        child_edges, omitted = _select_console_children(child_edges)
         new_prefix = prefix + ("    " if is_last else "|   ")
         for i, child_edge in enumerate(child_edges):
-            _print_node(child_edge, new_prefix, i == len(child_edges) - 1, depth + 1)
+            _print_node(child_edge, new_prefix, i == len(child_edges) - 1 and omitted == 0, depth + 1)
+        if omitted:
+            print(f"{new_prefix}+-- ... +{omitted} ramos omitidos")
 
     root_state = root_edge.child_state
     root_marker = "*** " if root_state in solution_states else ""
@@ -81,8 +103,11 @@ def print_search_tree(result, max_depth=None):
         f"g=0.0, h={root_edge.h:.1f}, f={root_edge.f:.1f}]"
     )
     child_edges = sorted(children_map.get(root_state, []), key=lambda e: e.f)
+    child_edges, omitted = _select_console_children(child_edges)
     for i, child_edge in enumerate(child_edges):
-        _print_node(child_edge, "", i == len(child_edges) - 1, 1)
+        _print_node(child_edge, "", i == len(child_edges) - 1 and omitted == 0, 1)
+    if omitted:
+        print(f"+-- ... +{omitted} ramos omitidos")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -109,6 +134,21 @@ def _fmt_edge_cost(value):
     return f"{value:.1f}".replace(".", ",")
 
 
+COLOR_SOLUTION = "#dbeafe"
+COLOR_EXPANDED = "#e5e7eb"
+COLOR_OPEN = "white"
+COLOR_GOAL = "#b6f2b6"
+COLOR_PRUNED = "#fef3c7"
+
+FOCUSED_MAX_ALTERNATIVES_PER_STEP = 3
+FULL_TREE_MAX_DEPTH = 3
+FULL_TREE_MAX_CHILDREN_PER_NODE = 4
+
+
+def _fmt_battery(value):
+    return _fmt_edge_cost(value)
+
+
 def _edge_label_between(parent_g, child_edge):
     action = child_edge.action or ""
     cost = child_edge.g - parent_g
@@ -123,9 +163,139 @@ def _edge_label_between(parent_g, child_edge):
     return _fmt_edge_cost(cost)
 
 
+def _tree_node_label(state, edge_data, is_goal=False, is_recharge_action=False):
+    label = (
+        f"{state.current_node}\n"
+        f"g={_fmt(edge_data.g)} h={_fmt(edge_data.h)} f={_fmt(edge_data.f)}\n"
+        f"b={_fmt_battery(state.battery_level)}% coletas={len(state.collected_points)}"
+    )
+    if is_goal:
+        label = "OBJETIVO\n" + label
+    if is_recharge_action:
+        label += "\nrecarga"
+    return label
+
+
+def _add_graphviz_legend(dot, focused=False):
+    expanded_label = "Expandido / Closed"
+    if focused:
+        expanded_label = "Expandido / Closed\n(filhos nao desenhados nesta visao)"
+
+    with dot.subgraph(name="cluster_legend") as legend:
+        legend.attr(label="Legenda", fontname="Arial", fontsize="11", color="#cccccc")
+        legend.attr("node", shape="box", style="filled", fontname="Arial", fontsize="9", color="black")
+        legend.node("legend_origin", "Origem\nprimeiro estado do caminho", fillcolor=COLOR_SOLUTION)
+        legend.node("legend_solution", "Caminho escolhido\narestas azuis", fillcolor=COLOR_SOLUTION)
+        legend.node("legend_goal", "Destino / objetivo", fillcolor=COLOR_GOAL, peripheries="2")
+        legend.node("legend_collection", "Ponto de coleta\nnos C; coletas aparecem em K", fillcolor="#ffedd5")
+        legend.node("legend_recharge", "Estacao / acao de recarga\nnos R; recarga soma em g(s)", fillcolor="#dcfce7")
+        legend.node("legend_expanded", expanded_label, fillcolor=COLOR_EXPANDED)
+        legend.node("legend_open", "Gerado / Open", fillcolor=COLOR_OPEN)
+        legend.node("legend_alternative", "Alternativas desenhadas\narestas cinza", fillcolor=COLOR_OPEN)
+        legend.node(
+            "legend_pruned",
+            "Ramos omitidos por limite visual:\n"
+            "estados gerados na execucao,\n"
+            "mas ocultados para evitar arvore ilegivel.\n"
+            "Nao e poda do algoritmo;\n"
+            "Open/Closed e metricas reais nao mudam.",
+            fillcolor=COLOR_PRUNED,
+        )
+
+
+def _sorted_edges(edges):
+    return sorted(
+        edges,
+        key=lambda edge: (
+            edge.f,
+            edge.g,
+            edge.child_state.current_node,
+            edge.child_state.battery_level,
+            tuple(sorted(edge.child_state.collected_points)),
+        ),
+    )
+
+
+def _build_tree_indexes(result):
+    successors_of = defaultdict(list)
+    best_edge = {}
+    expanded_set = set()
+    root_edge = None
+
+    for edge in result.search_tree:
+        if edge.parent_state is None:
+            root_edge = edge
+        else:
+            successors_of[edge.parent_state].append(edge)
+            expanded_set.add(edge.parent_state)
+
+        state = edge.child_state
+        if state not in best_edge or edge.g < best_edge[state].g:
+            best_edge[state] = edge
+
+    for state, edges in list(successors_of.items()):
+        successors_of[state] = _sorted_edges(edges)
+
+    return root_edge, successors_of, best_edge, expanded_set
+
+
+def _path_transition_edges(path_states, successors_of):
+    transition_edges = {}
+    for i in range(len(path_states) - 1):
+        parent = path_states[i]
+        child = path_states[i + 1]
+        for edge in successors_of.get(parent, []):
+            if edge.child_state == child:
+                transition_edges[parent] = edge
+                break
+    return transition_edges
+
+
+def _add_tree_node(dot, node_id, state, edge_data, result, path_set, expanded_set):
+    is_goal = state == result.final_state
+    is_path = state in path_set
+    label = _tree_node_label(
+        state,
+        edge_data,
+        is_goal=is_goal,
+        is_recharge_action="recarregar" in edge_data.action,
+    )
+
+    if is_goal:
+        dot.node(node_id, label=label, fillcolor=COLOR_GOAL, peripheries="2")
+    elif is_path:
+        dot.node(node_id, label=label, fillcolor=COLOR_SOLUTION)
+    elif state in expanded_set:
+        dot.node(node_id, label=label, fillcolor=COLOR_EXPANDED)
+    else:
+        dot.node(node_id, label=label, fillcolor=COLOR_OPEN)
+
+
+def _add_pruned_summary(dot, parent_id, summary_id, count):
+    if count <= 0:
+        return
+
+    label = (
+        f"+{count} ramos omitidos\n"
+        "limite visual\n"
+        "(estados gerados,\n"
+        "mas nao desenhados)"
+    )
+    dot.node(
+        summary_id,
+        label=label,
+        shape="box",
+        style="filled,dashed",
+        fillcolor=COLOR_PRUNED,
+        color="#f59e0b",
+        fontcolor="#92400e",
+    )
+    dot.edge(parent_id, summary_id, style="dashed", color="#d97706", arrowhead="none")
+
+
 def generate_focused_tree_image(graph, result, start_node, goal_node, output_dir="results"):
     """
-    Gera a imagem da árvore FOCADA: apenas o caminho solução e seus irmãos diretos.
+    Gera a imagem da arvore FOCADA: caminho final + poucas alternativas imediatas.
     Retorna o nome do arquivo gerado.
     """
     _ensure_graphviz_path()
@@ -140,33 +310,30 @@ def generate_focused_tree_image(graph, result, start_node, goal_node, output_dir
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # Usar original_state para lookups na arvore de busca (estados originais do A*)
-    path_states = [step.get("original_state", step["state"]) for step in result.path]
+    path_states = [step["state"] for step in result.path]
     path_actions = [step["action"] for step in result.path]
     path_set = set(path_states)
-
-    successors_of = defaultdict(list)
-    for edge in result.search_tree:
-        if edge.parent_state is not None:
-            successors_of[edge.parent_state].append(edge)
-
-    expanded_set = {edge.parent_state for edge in result.search_tree
-                    if edge.parent_state is not None}
-
-    best_edge = {}
-    for edge in result.search_tree:
-        st = edge.child_state
-        if st not in best_edge or edge.g < best_edge[st].g:
-            best_edge[st] = edge
+    _, successors_of, best_edge, expanded_set = _build_tree_indexes(result)
+    transition_edges = _path_transition_edges(path_states, successors_of)
 
     dot = graphviz.Digraph("ArvoreBuscaAStar", format="svg")
-    dot.attr(rankdir="TB", splines="true", nodesep="0.45", ranksep="0.75")
+    dot.attr(rankdir="TB", splines="true", nodesep="0.38", ranksep="0.65")
+    dot.attr(
+        label=(
+            "Arvore focada compactada: mostra o caminho escolhido e algumas alternativas imediatas. "
+            "Ramos omitidos sao limite visual, nao poda do A*."
+        ),
+        labelloc="t",
+        fontname="Arial",
+        fontsize="12",
+    )
     dot.attr("node", shape="ellipse", style="filled", fontname="Arial", fontsize="10", color="black")
     dot.attr("edge", fontname="Arial", fontsize="9", color="#555555")
 
     state_to_id = {}
     s_counter = [1]
     a_counter = [1]
+    p_counter = [1]
 
     def _next_s_id():
         nid = f"S{s_counter[0]}"
@@ -178,25 +345,12 @@ def generate_focused_tree_image(graph, result, start_node, goal_node, output_dir
         a_counter[0] += 1
         return nid
 
-    def _node_label(state, edge_data, is_goal=False, is_recharge_action=False):
-        col = ",".join(sorted(state.collected_points)) if state.collected_points else ""
-        g, h, f = edge_data.g, edge_data.h, edge_data.f
-        if is_goal:
-            return (
-                f"{state.current_node}\nOBJETIVO\n"
-                f"{_fmt(f)} = {_fmt(g)} + {_fmt(h)}\n"
-                f"b={state.battery_level}% K={{{col}}}"
-            )
-        label = (
-            f"{state.current_node}\n"
-            f"{_fmt(f)} = {_fmt(g)} + {_fmt(h)}\n"
-            f"b={state.battery_level}% K={{{col}}}"
-        )
-        if is_recharge_action:
-            label += "\nrecarga"
-        return label
+    def _next_p_id():
+        nid = f"P{p_counter[0]}"
+        p_counter[0] += 1
+        return nid
 
-    # 1. Adiciona nós do caminho solução (espinha dorsal cinza)
+    # Caminho escolhido: a espinha dorsal da explicacao.
     for i, state in enumerate(path_states):
         edge_data = best_edge[state]
         is_goal = (state == result.final_state)
@@ -205,62 +359,62 @@ def generate_focused_tree_image(graph, result, start_node, goal_node, output_dir
         node_id = _next_s_id()
         state_to_id[state] = node_id
 
-        label = _node_label(state, edge_data, is_goal, is_recharge)
+        label = _tree_node_label(state, edge_data, is_goal, is_recharge)
 
         if is_goal:
-            dot.node(node_id, label=label, fillcolor="#b6f2b6", peripheries="2")
+            dot.node(node_id, label=label, fillcolor=COLOR_GOAL, peripheries="2")
         else:
-            dot.node(node_id, label=label, fillcolor="#d9d9d9")
+            dot.node(node_id, label=label, fillcolor=COLOR_SOLUTION)
 
         if i > 0:
             prev_state = path_states[i - 1]
             prev_id = state_to_id[prev_state]
-            connecting_edge = None
-            for e in successors_of.get(prev_state, []):
-                if e.child_state == state:
-                    connecting_edge = e
-                    break
+            connecting_edge = transition_edges.get(prev_state)
             if connecting_edge:
                 elabel = _edge_label_between(best_edge[prev_state].g, connecting_edge)
-                dot.edge(prev_id, node_id, label=elabel)
+                dot.edge(prev_id, node_id, label=f"escolhido\n{elabel}", color="#2563eb", penwidth="2")
             else:
                 cost = result.path[i]["g"] - result.path[i - 1]["g"]
-                dot.edge(prev_id, node_id, label=_fmt_edge_cost(cost))
+                dot.edge(prev_id, node_id, label=f"escolhido\n{_fmt_edge_cost(cost)}", color="#2563eb", penwidth="2")
 
-    # 2. Adiciona os irmãos gerados (nós brancos ou sub-cinzas)
-    for i, state in enumerate(path_states):
+    # Alternativas imediatas de cada decisao do caminho, sem abrir sub-ramos.
+    for state in path_states:
         parent_id = state_to_id[state]
         parent_g = best_edge[state].g
+        alternatives = [
+            edge for edge in successors_of.get(state, [])
+            if edge.child_state not in path_set
+        ]
+        selected = alternatives[:FOCUSED_MAX_ALTERNATIVES_PER_STEP]
 
-        for succ_edge in successors_of.get(state, []):
+        drawn = 0
+        for succ_edge in selected:
             child = succ_edge.child_state
-            if child in path_set or child in state_to_id:
+            if child in state_to_id:
                 continue
 
             was_expanded = child in expanded_set
             child_id = _next_s_id() if was_expanded else _next_a_id()
             state_to_id[child] = child_id
 
-            label = _node_label(child, succ_edge, is_recharge_action="recarregar" in succ_edge.action)
-            fillcolor = "#d9d9d9" if was_expanded else "white"
-            dot.node(child_id, label=label, fillcolor=fillcolor)
+            label = _tree_node_label(child, succ_edge, is_recharge_action="recarregar" in succ_edge.action)
+            fillcolor = COLOR_EXPANDED if was_expanded else COLOR_OPEN
+            node_style = "filled,dashed" if was_expanded else "filled"
+            dot.node(child_id, label=label, fillcolor=fillcolor, style=node_style)
 
             elabel = _edge_label_between(parent_g, succ_edge)
-            dot.edge(parent_id, child_id, label=elabel)
+            dot.edge(parent_id, child_id, label=f"opcao\n{elabel}", color="#9ca3af")
+            drawn += 1
 
-            if was_expanded:
-                for sub_edge in successors_of.get(child, []):
-                    sub_child = sub_edge.child_state
-                    if sub_child in state_to_id:
-                        continue
-                    sub_id = _next_a_id()
-                    state_to_id[sub_child] = sub_id
+        omitted_count = max(0, len(alternatives) - drawn)
+        _add_pruned_summary(
+            dot,
+            parent_id,
+            _next_p_id(),
+            omitted_count,
+        )
 
-                    sub_label = _node_label(sub_child, sub_edge, is_recharge_action="recarregar" in sub_edge.action)
-                    dot.node(sub_id, label=sub_label, fillcolor="white")
-
-                    sub_elabel = _edge_label_between(best_edge[child].g if child in best_edge else succ_edge.g, sub_edge)
-                    dot.edge(child_id, sub_id, label=sub_elabel)
+    _add_graphviz_legend(dot, focused=True)
 
     filename = "arvore_busca_focada.svg"
     
@@ -277,7 +431,7 @@ def generate_focused_tree_image(graph, result, start_node, goal_node, output_dir
 
 def generate_full_tree_image(graph, result, start_node, goal_node, output_dir="results"):
     """
-    Gera a imagem COMPLETA da árvore de busca com todos os estados explorados.
+    Gera uma arvore COMPLETA compactada: primeiros niveis + caminho ate o objetivo.
     Retorna o nome do arquivo gerado.
     """
     _ensure_graphviz_path()
@@ -291,55 +445,135 @@ def generate_full_tree_image(graph, result, start_node, goal_node, output_dir="r
         return None
 
     os.makedirs(output_dir, exist_ok=True)
-    path_states = set(step.get("original_state", step["state"]) for step in result.path)
-    
+
+    root_edge, successors_of, best_edge, expanded_set = _build_tree_indexes(result)
+    if root_edge is None:
+        return None
+
+    path_states_list = [step["state"] for step in result.path]
+    path_set = set(path_states_list)
+    transition_edges = _path_transition_edges(path_states_list, successors_of)
+    path_next = {
+        path_states_list[i]: path_states_list[i + 1]
+        for i in range(len(path_states_list) - 1)
+    }
+
     dot = graphviz.Digraph("ArvoreBuscaCompleta", format="svg")
-    dot.attr(rankdir="TB", splines="true", nodesep="0.45", ranksep="0.75")
+    dot.attr(rankdir="TB", splines="true", nodesep="0.35", ranksep="0.62")
+    dot.attr(
+        label=(
+            "Arvore completa compactada por limite visual: estados omitidos existiram na execucao, "
+            "mas nao foram desenhados para manter a figura legivel."
+        ),
+        labelloc="t",
+        fontname="Arial",
+        fontsize="12",
+    )
     dot.attr("node", shape="ellipse", style="filled", fontname="Arial", fontsize="10", color="black")
     dot.attr("edge", fontname="Arial", fontsize="9", color="#555555")
 
     state_to_id = {}
-    counter = [1]
+    node_counter = [1]
+    summary_counter = [1]
+    rendered_states = set()
+    expanded_rendered_depth = {}
+    drawn_edges = set()
+
     def _get_id(state):
         if state not in state_to_id:
-            state_to_id[state] = f"N{counter[0]}"
-            counter[0] += 1
+            state_to_id[state] = f"N{node_counter[0]}"
+            node_counter[0] += 1
         return state_to_id[state]
 
-    all_states = set()
-    best_edge = {}
-    for edge in result.search_tree:
-        if edge.parent_state:
-            all_states.add(edge.parent_state)
-        all_states.add(edge.child_state)
-        if edge.child_state not in best_edge or edge.g < best_edge[edge.child_state].g:
-            best_edge[edge.child_state] = edge
+    def _next_summary_id():
+        nid = f"X{summary_counter[0]}"
+        summary_counter[0] += 1
+        return nid
 
-    for state in all_states:
+    def _draw_state(state):
         nid = _get_id(state)
-        is_goal = (state == result.final_state)
-        is_path = state in path_states
-        
-        col = ",".join(sorted(state.collected_points)) if state.collected_points else ""
-        label = f"{state.current_node}\nb={state.battery_level}% K={{{col}}}"
-        if is_goal:
-            label = "OBJETIVO\n" + label
-            dot.node(nid, label=label, fillcolor="#b6f2b6", peripheries="2")
-        elif is_path:
-            dot.node(nid, label=label, fillcolor="#d9d9d9")
-        else:
-            dot.node(nid, label=label, fillcolor="white")
+        if state not in rendered_states:
+            _add_tree_node(dot, nid, state, best_edge[state], result, path_set, expanded_set)
+            rendered_states.add(state)
+        return nid
 
-    for edge in result.search_tree:
-        if edge.parent_state is None:
-            continue
-        pid = _get_id(edge.parent_state)
-        cid = _get_id(edge.child_state)
-        
-        parent_edge = best_edge.get(edge.parent_state)
+    def _draw_edge(parent_state, edge):
+        parent_id = _get_id(parent_state)
+        child_id = _get_id(edge.child_state)
+        edge_key = (parent_id, child_id)
+        if edge_key in drawn_edges:
+            return
+
+        parent_edge = best_edge.get(parent_state)
         parent_g = parent_edge.g if parent_edge else 0
         elabel = _edge_label_between(parent_g, edge)
-        dot.edge(pid, cid, label=elabel)
+
+        if transition_edges.get(parent_state) == edge:
+            dot.edge(parent_id, child_id, label=elabel, color="#2563eb", penwidth="2")
+        else:
+            dot.edge(parent_id, child_id, label=elabel)
+
+        drawn_edges.add(edge_key)
+
+    def _select_children(state, depth):
+        edges = successors_of.get(state, [])
+        if not edges:
+            return [], 0
+
+        path_child = path_next.get(state)
+        path_edge = None
+        if path_child is not None:
+            for edge in edges:
+                if edge.child_state == path_child:
+                    path_edge = edge
+                    break
+
+        if depth >= FULL_TREE_MAX_DEPTH:
+            selected = [path_edge] if path_edge is not None else []
+            omitted = len(edges) - len(selected)
+            return selected, max(0, omitted)
+
+        selected = []
+        if path_edge is not None:
+            selected.append(path_edge)
+
+        for edge in edges:
+            if path_edge is not None and edge.child_state == path_edge.child_state:
+                continue
+            if len(selected) >= FULL_TREE_MAX_CHILDREN_PER_NODE:
+                break
+            selected.append(edge)
+
+        omitted = len(edges) - len(selected)
+        return selected, max(0, omitted)
+
+    def _draw_subtree(state, depth):
+        previous_depth = expanded_rendered_depth.get(state)
+        if previous_depth is not None and previous_depth <= depth:
+            return
+        expanded_rendered_depth[state] = depth
+
+        parent_id = _draw_state(state)
+        children, omitted = _select_children(state, depth)
+
+        for edge in children:
+            child = edge.child_state
+            _draw_state(child)
+            _draw_edge(state, edge)
+
+            should_continue = (
+                child in path_set
+                or child in expanded_set
+                or depth + 1 < FULL_TREE_MAX_DEPTH
+            )
+            if should_continue:
+                _draw_subtree(child, depth + 1)
+
+        if omitted:
+            _add_pruned_summary(dot, parent_id, _next_summary_id(), omitted)
+
+    _draw_subtree(root_edge.child_state, 0)
+    _add_graphviz_legend(dot)
 
     filename = "arvore_busca_completa.svg"
     
@@ -474,6 +708,9 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
     </div>
 
     <div class="stats-grid" id="stats-row"></div>
+    <div class="panel metric-note">
+      <strong>Leitura das métricas:</strong> estados expandidos são contados pela Closed List real da execução. O tamanho da Open List representa os estados ativos ainda disponíveis para expansão ao final da busca. Estados gerados correspondem aos estados aceitos na estrutura de execução, incluindo a raiz. A árvore Graphviz pode ocultar ramos por limite visual, mas essa compactação não altera Open, Closed nem as contagens do algoritmo.
+    </div>
 
     <div class="section-title">Visualização do Terreno</div>
     <div class="panel">
@@ -549,18 +786,21 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
     </div>
 
     <div class="section-title">Árvores de Busca Geradas</div>
+    <div class="panel visual-note">
+      <strong>Como ler as árvores compactadas:</strong> os ramos omitidos por limite visual representam estados que foram gerados durante a execução do A*, mas não foram desenhados para evitar uma figura excessivamente grande e difícil de ler. Isso não é poda do algoritmo: a execução, as listas Open/Closed e as métricas reais continuam considerando os estados normalmente. Sem esse limite visual, a imagem precisaria desenhar todos os sucessores e sub-ramos gerados pela busca.
+    </div>
     
     <h3 style="font-size: 1.1rem; margin-bottom: 12px; color: var(--path);">Heurística Admissível (h5)</h3>
     <div class="images-grid" style="margin-bottom: 24px;">
       <div class="img-card" onclick="openLightbox(this)">
         <div class="svg-container">{svg_foc_h5}</div>
         <div class="img-title">Árvore Focada (h5)</div>
-        <div class="img-desc">Exibe apenas o caminho da solução e as alternativas (irmãos) diretamente geradas durante a expansão.</div>
+        <div class="img-desc">Azul é o caminho escolhido. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
       </div>
       <div class="img-card" onclick="openLightbox(this)">
         <div class="svg-container">{svg_cmp_h5}</div>
-        <div class="img-title">Árvore Completa (h5)</div>
-        <div class="img-desc">Visualização ampla de todo o espaço de estados e todos os nós explorados pelo algoritmo.</div>
+        <div class="img-title">Árvore Completa Compactada (h5)</div>
+        <div class="img-desc">Mostra uma árvore compactada. As caixas amarelas são estados gerados, mas não desenhados para manter a figura legível; não representam poda do A*.</div>
       </div>
     </div>
 
@@ -569,12 +809,12 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
       <div class="img-card" onclick="openLightbox(this)">
         <div class="svg-container">{svg_foc_h4}</div>
         <div class="img-title">Árvore Focada (h4)</div>
-        <div class="img-desc">Exibe a árvore sub-ótima com estados muito mais direcionados de forma gulosa.</div>
+        <div class="img-desc">Azul é o caminho escolhido. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
       </div>
       <div class="img-card" onclick="openLightbox(this)">
         <div class="svg-container">{svg_cmp_h4}</div>
-        <div class="img-title">Árvore Completa (h4)</div>
-        <div class="img-desc">Visualização completa do caminho escolhido pela h4.</div>
+        <div class="img-title">Árvore Completa Compactada (h4)</div>
+        <div class="img-desc">Mostra uma árvore compactada da h4. As caixas amarelas são estados gerados, mas não desenhados para manter a figura legível; não representam poda do A*.</div>
       </div>
     </div>
 
@@ -728,101 +968,31 @@ def _build_path_js(result, graph, goal_node, h_func):
 
 
 def _build_heuristic_table_js(result, graph, start_node, goal_node, h_func):
-    if start_node == "C1" and goal_node == "C3":
-        return _build_c1_c3_didactic_heuristic_table_js(graph, goal_node, h_func)
-
     return _build_path_js(result, graph, goal_node, h_func)
-
-
-def _build_c1_c3_didactic_heuristic_table_js(graph, goal_node, h_func):
-    from estado import State
-    from heuristica import (
-        min_collection_time,
-        min_displacement_time,
-        min_recharge_time,
-        remaining_collections,
-    )
-
-    route = [
-        ("C1", 98, frozenset(["C1"]), "início", 2.00),
-        ("R1", 80, frozenset(["C1"]), "mover C1 -> R1", 20.00),
-        ("C4", 56, frozenset(["C1", "C4"]), "mover R1 -> C4 e coletar em C4", 44.00),
-        ("R2", 39, frozenset(["C1", "C4"]), "mover C4 -> R2", 61.00),
-        ("R2", 93, frozenset(["C1", "C4"]), "recarga parcial em R2: +54% (10,80 min)", 71.80),
-        ("C7", 66, frozenset(["C1", "C4", "C7"]), "mover R2 -> C7 e coletar em C7", 98.80),
-        ("C8", 44, frozenset(["C1", "C4", "C7"]), "mover C7 -> C8", 120.80),
-        ("C5", 24, frozenset(["C1", "C4", "C7"]), "mover C8 -> C5", 140.80),
-        ("C3", 1, frozenset(["C1", "C4", "C7"]), "mover C5 -> C3", 163.80),
-    ]
-
-    items = []
-    for node, battery, collected, action, g_value in route:
-        state = State(node, battery, collected)
-        col = ",".join(sorted(state.collected_points))
-        escaped_action = html_module.escape(action, quote=True)
-        h_val = h_func(graph, state, goal_node)
-        f_val = g_value + h_val
-        h_desloc = min_displacement_time(graph, state, goal_node)
-        h_coleta = min_collection_time(state)
-        h_recarga = min_recharge_time(graph, state, goal_node)
-        remaining = remaining_collections(state)
-
-        items.append(
-            f'{{"node":"{state.current_node}",'
-            f'"battery":{state.battery_level},'
-            f'"collected":"{col}",'
-            f'"numCollected":{len(state.collected_points)},'
-            f'"action":"{escaped_action}",'
-            f'"g":{g_value:.2f},'
-            f'"h":{h_val:.2f},'
-            f'"f":{f_val:.2f},'
-            f'"h_desloc":{h_desloc:.2f},'
-            f'"remaining":{remaining},'
-            f'"h_coleta":{h_coleta:.2f},'
-            f'"h_recarga":{h_recarga:.2f}}}'
-        )
-
-    return "[" + ",".join(items) + "]"
 
 
 def _build_focused_tree_js(result):
     if not result.success or not result.path:
         return "null"
-    path_states = [step.get("original_state", step["state"]) for step in result.path]
+    path_states = [step["state"] for step in result.path]
     path_set = set(path_states)
-    successors_of = defaultdict(list)
-    for edge in result.search_tree:
-        if edge.parent_state is not None:
-            successors_of[edge.parent_state].append(edge)
-    expanded_set = {e.parent_state for e in result.search_tree if e.parent_state is not None}
-    best_edge = {}
-    for edge in result.search_tree:
-        st = edge.child_state
-        if st not in best_edge or edge.g < best_edge[st].g:
-            best_edge[st] = edge
+    _, successors_of, best_edge, expanded_set = _build_tree_indexes(result)
 
     def _build_node(state, edge_data, is_on_path):
-        col = ",".join(sorted(state.collected_points)) if state.collected_points else ""
         children = []
         if is_on_path:
-            for succ_edge in successors_of.get(state, []):
+            alternatives = [
+                edge for edge in successors_of.get(state, [])
+                if edge.child_state not in path_set
+            ][:FOCUSED_MAX_ALTERNATIVES_PER_STEP]
+            for succ_edge in alternatives:
                 child = succ_edge.child_state
-                if child in path_set:
-                    continue
                 was_expanded = child in expanded_set
                 child_node = {
                     "node": child.current_node, "battery": child.battery_level, "numCollected": len(child.collected_points),
                     "g": succ_edge.g, "h": succ_edge.h, "f": succ_edge.f, "action": succ_edge.action,
                     "isSolution": False, "isExpanded": was_expanded, "children": []
                 }
-                if was_expanded:
-                    for sub_edge in successors_of.get(child, []):
-                        sub = sub_edge.child_state
-                        child_node["children"].append({
-                            "node": sub.current_node, "battery": sub.battery_level, "numCollected": len(sub.collected_points),
-                            "g": sub_edge.g, "h": sub_edge.h, "f": sub_edge.f, "action": sub_edge.action,
-                            "isSolution": False, "isExpanded": False, "children": []
-                        })
                 children.append(child_node)
         return {
             "node": state.current_node, "battery": state.battery_level, "numCollected": len(state.collected_points),
@@ -879,6 +1049,8 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .heuristic-table th, .heuristic-table td { white-space: nowrap; vertical-align: top; }
 .heuristic-table td:nth-child(3) { white-space: normal; min-width: 210px; }
 .formula-note { margin-top: 16px; margin-bottom: 0; color: var(--text-mut); }
+.metric-note { border-left: 4px solid var(--path); background: #eff6ff; color: #1e3a8a; padding: 18px 22px; }
+.visual-note { border-left: 4px solid #f59e0b; background: #fffbeb; color: #78350f; padding: 18px 22px; }
 .map-legend { display: flex; gap: 20px; margin-bottom: 20px; font-size: 0.9rem; color: var(--text-mut); }
 .l-item { display: flex; align-items: center; gap: 8px; }
 .dot { width: 12px; height: 12px; border-radius: 50%; }
@@ -895,12 +1067,12 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .p-act { color: var(--text-mut); font-size: 0.95rem; margin-bottom: 8px; }
 .p-metrics { display: flex; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-main); }
 .tree-node { margin-left: 24px; position: relative; border-left: 1px solid #ddd; padding-left: 16px; margin-top: 8px; }
-.tree-item { display: inline-flex; align-items: center; gap: 12px; padding: 8px 12px; cursor: pointer; border-radius: 6px; background: #f9f9f9; transition: background 0.2s; border: 1px solid transparent; }
+.tree-item { display: inline-flex; align-items: center; flex-wrap: wrap; max-width: 100%; gap: 12px; padding: 8px 12px; cursor: pointer; border-radius: 6px; background: #f9f9f9; transition: background 0.2s; border: 1px solid transparent; }
 .tree-item:hover { background: #f1f1f1; }
 .tree-item.is-sol { background: #eff6ff; border-color: #bfdbfe; }
 .tree-toggle { width: 16px; font-weight: bold; color: var(--text-mut); text-align: center; }
 .t-node { font-weight: 700; font-size: 1rem; }
-.t-data { color: var(--text-mut); font-size: 0.85rem; font-family: 'JetBrains Mono', monospace; }
+.t-data { color: var(--text-mut); font-size: 0.85rem; font-family: 'JetBrains Mono', monospace; overflow-wrap: anywhere; }
 .tree-kids { display: none; } .tree-kids.open { display: block; }
 .btn { background: var(--accent); color: #fff; border: none; padding: 10px 20px; font-size: 0.9rem; font-weight: 600; border-radius: 6px; cursor: pointer; transition: opacity 0.2s; }
 .btn:hover { opacity: 0.8; }
@@ -930,7 +1102,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
   .map-legend { flex-wrap: wrap; gap: 12px; }
   .p-metrics { flex-wrap: wrap; gap: 8px; }
   .tree-node { margin-left: 12px; padding-left: 10px; }
-  .tree-item { max-width: 100%; overflow-x: auto; }
+  .tree-item { max-width: 100%; overflow-x: auto; flex-wrap: wrap; }
   .images-grid { gap: 20px; }
   .img-card { border-radius: 8px; padding: 12px; }
   .lightbox { padding: 16px; }
@@ -947,7 +1119,10 @@ function renderStats(){
     {l:'Bateria Final',v:STATS.finalBattery+'%'},
     {l:'Estados Expandidos',v:STATS.expandedStates},
     {l:'Minutos Operacionais',v:STATS.totalTime.toFixed(1)},
-    {l:'Coletas Realizadas',v:STATS.finalCollected}
+    {l:'Coletas Realizadas',v:STATS.finalCollected},
+    {l:'Open final ativa',v:STATS.openListSize},
+    {l:'Closed final',v:STATS.closedListSize},
+    {l:'Estados gerados',v:STATS.treeEdges}
   ];
   r.innerHTML=d.map(x=>`<div class="stat-item"><div class="value">${x.v}</div><div class="label">${x.l}</div></div>`).join('');
 }
@@ -995,7 +1170,7 @@ function buildT(n){
   let cls=''; if(n.isSolution)cls=' is-sol';
   let tog='<span class="tree-toggle"> </span>'; if(has)tog='<span class="tree-toggle" data-toggle>+</span>';
   let ch=''; if(has)ch=`<div class="tree-kids open">${n.children.map(buildT).join('')}</div>`;
-  return `<div class="tree-node"><div class="tree-item${cls}">${tog}<span class="t-node">${n.node}</span><span class="t-data"> Custo:${n.g.toFixed(1)} | F:${n.f.toFixed(1)} | Bateria:${n.battery}%</span></div>${ch}</div>`;
+  return `<div class="tree-node"><div class="tree-item${cls}">${tog}<span class="t-node">${n.node}</span><span class="t-data"> g:${n.g.toFixed(1)} | h:${n.h.toFixed(1)} | f:${n.f.toFixed(1)} | Bateria:${n.battery}% | Coletas:${n.numCollected}</span></div>${ch}</div>`;
 }
 function renderTree(){
   const c=document.getElementById('tree-container');
