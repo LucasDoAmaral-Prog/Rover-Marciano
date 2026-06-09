@@ -48,6 +48,12 @@ def build_parser():
         default=3,
         help="Profundidade maxima da arvore no console. Padrao: 3. Para sem limite passe um valor alto.",
     )
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        default=5.0,
+        help="Fator de inflacao da heuristica h4. Use 1.5 para reproduzir o caso C10 -> C4 antigo.",
+    )
     return parser
 
 
@@ -55,7 +61,7 @@ def print_separator():
     print("=" * 60)
 
 
-def print_problem_configuration(graph, start_node, goal_node):
+def print_problem_configuration(graph, start_node, goal_node, h4_alpha):
     print_separator()
     print("  CONFIGURACAO DA BUSCA A*")
     print_separator()
@@ -64,6 +70,7 @@ def print_problem_configuration(graph, start_node, goal_node):
     print(f"  Bateria inicial:  {MAX_BATTERY}%")
     print(f"  Bateria minima:   {MIN_BATTERY}%")
     print(f"  Coletas minimas:  {MIN_COLLECTIONS}")
+    print(f"  Alpha da h4:      {h4_alpha:g}")
     print(f"  Total de nos:     {len(graph.adjacency_list)}")
     print_separator()
     print()
@@ -142,7 +149,7 @@ def main():
     goal_node = args.goal.upper()
 
     print()
-    print_problem_configuration(graph, start_node, goal_node)
+    print_problem_configuration(graph, start_node, goal_node, args.alpha)
 
     print("=== EXECUTANDO COM HEURISTICA ADMISSIVEL (h5) ===")
     result_h5 = search.search(start_node, goal_node, heuristic_func=h5)
@@ -156,7 +163,7 @@ def main():
     )
     
     print("=== EXECUTANDO COM HEURISTICA INFLADA NAO ADMISSIVEL (h4) ===")
-    h4_func = partial(h4, alpha=5)
+    h4_func = partial(h4, alpha=args.alpha)
     result_h4 = search.search(start_node, goal_node, heuristic_func=h4_func)
     print_result(
         result_h4,
@@ -187,6 +194,7 @@ def main():
     html_path = generate_html(
         graph, result_h5, result_h4, start_node, goal_node,
         output_file=html_out,
+        h4_alpha=args.alpha,
     )
     print(f"  Visualizacao HTML: {html_path}")
     print()

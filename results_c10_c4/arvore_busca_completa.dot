@@ -5,43 +5,43 @@ digraph ArvoreBuscaCompleta {
 	edge [color="#555555" fontname=Arial fontsize=9]
 	N1 [label="C10
 g=2,00 h=29,48 f=31,48
-b=98% coletas=1" fillcolor="#dbeafe"]
+b=98% coletas=1" fillcolor="#dbeafe" style=filled]
 	N2 [label="C11
 g=24,00 h=40,86 f=64,86
-b=76% coletas=2" fillcolor="#dbeafe"]
+b=76% coletas=2" fillcolor="#dbeafe" style=filled]
 	N1 -> N2 [label="20 + coleta" color="#2563eb" penwidth=2]
 	N3 [label="C10
 g=44,00 h=26,48 f=70,48
-b=56% coletas=2" fillcolor="#dbeafe"]
+b=56% coletas=2" fillcolor="#dbeafe" style=filled]
 	N2 -> N3 [label=20 color="#2563eb" penwidth=2]
 	N4 [label="OBJETIVO
 C4
 g=72,00 h=0,00 f=72,00
-b=28% coletas=3" fillcolor="#b6f2b6" peripheries=2]
+b=28% coletas=3" fillcolor="#b6f2b6" peripheries=2 style=filled]
 	N3 -> N4 [label="26 + coleta" color="#2563eb" penwidth=2]
 	N5 [label="C9
 g=77,00 h=29,70 f=106,70
-b=23% coletas=3" fillcolor=white]
+b=23% coletas=3" fillcolor=white style=filled]
 	N3 -> N5 [label="31 + coleta"]
 	N6 [label="C13
 g=70,00 h=42,00 f=112,00
-b=30% coletas=3" fillcolor=white]
+b=30% coletas=3" fillcolor=white style=filled]
 	N3 -> N6 [label="24 + coleta"]
 	N7 [label="R6
 g=41,00 h=27,49 f=68,49
-b=59% coletas=2" fillcolor="#e5e7eb"]
+b=59% coletas=2" fillcolor="#e5e7eb" style=filled]
 	N2 -> N7 [label=17]
 	N8 [label="C6
 g=56,00 h=21,00 f=77,00
-b=44% coletas=3" fillcolor=white]
+b=44% coletas=3" fillcolor=white style=filled]
 	N7 -> N8 [label="13 + coleta"]
 	N9 [label="C7
 g=51,00 h=42,00 f=93,00
-b=49% coletas=3" fillcolor=white]
+b=49% coletas=3" fillcolor=white style=filled]
 	N2 -> N9 [label="25 + coleta"]
 	N10 [label="C12
 g=47,00 h=56,54 f=103,54
-b=53% coletas=3" fillcolor=white]
+b=53% coletas=3" fillcolor=white style=filled]
 	N2 -> N10 [label="21 + coleta"]
 	X1 [label="+1 ramos omitidos
 limite visual
@@ -50,31 +50,31 @@ mas nao desenhados)" color="#f59e0b" fillcolor="#fef3c7" fontcolor="#92400e" sha
 	N2 -> X1 [arrowhead=none color="#d97706" style=dashed]
 	N11 [label="C4
 g=30,00 h=3,00 f=33,00
-b=70% coletas=2" fillcolor="#e5e7eb"]
+b=70% coletas=2" fillcolor="#e5e7eb" style=filled]
 	N1 -> N11 [label="26 + coleta"]
 	N12 [label="R2
 g=47,00 h=27,49 f=74,49
-b=53% coletas=2" fillcolor=white]
+b=53% coletas=2" fillcolor=white style=filled]
 	N11 -> N12 [label=17]
 	N13 [label="R1
 g=52,00 h=26,48 f=78,48
-b=48% coletas=2" fillcolor=white]
+b=48% coletas=2" fillcolor=white style=filled]
 	N11 -> N13 [label=22]
 	N14 [label="C10
 g=56,00 h=26,48 f=82,48
-b=44% coletas=2" fillcolor=white]
+b=44% coletas=2" fillcolor=white style=filled]
 	N11 -> N14 [label=26]
 	N15 [label="R6
 g=16,00 h=30,49 f=46,49
-b=84% coletas=1" fillcolor="#e5e7eb"]
+b=84% coletas=1" fillcolor="#e5e7eb" style=filled]
 	N1 -> N15 [label=14]
 	N16 [label="C6
 g=31,00 h=24,00 f=55,00
-b=69% coletas=2" fillcolor="#e5e7eb"]
+b=69% coletas=2" fillcolor="#e5e7eb" style=filled]
 	N15 -> N16 [label="13 + coleta"]
 	N17 [label="R6
 g=44,00 h=27,49 f=71,49
-b=56% coletas=2" fillcolor="#e5e7eb"]
+b=56% coletas=2" fillcolor="#e5e7eb" style=filled]
 	N16 -> N17 [label=13]
 	X2 [label="+2 ramos omitidos
 limite visual
@@ -83,27 +83,27 @@ mas nao desenhados)" color="#f59e0b" fillcolor="#fef3c7" fontcolor="#92400e" sha
 	N17 -> X2 [arrowhead=none color="#d97706" style=dashed]
 	N18 [label="R2
 g=49,00 h=27,49 f=76,49
-b=51% coletas=2" fillcolor=white]
+b=51% coletas=2" fillcolor=white style=filled]
 	N16 -> N18 [label=18]
 	N19 [label="C7
 g=52,00 h=42,00 f=94,00
-b=48% coletas=3" fillcolor=white]
+b=48% coletas=3" fillcolor=white style=filled]
 	N16 -> N19 [label="19 + coleta"]
 	N20 [label="C9
 g=35,00 h=32,70 f=67,70
-b=65% coletas=2" fillcolor="#e5e7eb"]
+b=65% coletas=2" fillcolor="#e5e7eb" style=filled]
 	N1 -> N20 [label="31 + coleta"]
 	N21 [label="R3
 g=51,00 h=36,20 f=87,20
-b=49% coletas=2" fillcolor=white]
+b=49% coletas=2" fillcolor=white style=filled]
 	N20 -> N21 [label=16]
 	N22 [label="C10
 g=66,00 h=26,48 f=92,48
-b=34% coletas=2" fillcolor=white]
+b=34% coletas=2" fillcolor=white style=filled]
 	N20 -> N22 [label=31]
 	N23 [label="C1
 g=61,00 h=31,50 f=92,50
-b=39% coletas=3" fillcolor=white]
+b=39% coletas=3" fillcolor=white style=filled]
 	N20 -> N23 [label="24 + coleta"]
 	X3 [label="+1 ramos omitidos
 limite visual
@@ -113,19 +113,16 @@ mas nao desenhados)" color="#f59e0b" fillcolor="#fef3c7" fontcolor="#92400e" sha
 	subgraph cluster_legend {
 		color="#cccccc" fontname=Arial fontsize=11 label=Legenda
 		node [color=black fontname=Arial fontsize=9 shape=box style=filled]
-		legend_origin [label="Origem
-primeiro estado do caminho" fillcolor="#dbeafe"]
-		legend_solution [label="Caminho escolhido
-arestas azuis" fillcolor="#dbeafe"]
+		legend_solution [label="Estado no caminho escolhido
+arestas azuis ligam a rota final" fillcolor="#dbeafe"]
+		legend_recharge [label="Acao de recarga executada
+recarga tambem entra em g(s)" color="#059669" fillcolor="#dcfce7"]
 		legend_goal [label="Destino / objetivo" fillcolor="#b6f2b6" peripheries=2]
-		legend_collection [label="Ponto de coleta
-nos C; coletas aparecem em K" fillcolor="#ffedd5"]
-		legend_recharge [label="Estacao / acao de recarga
-nos R; recarga soma em g(s)" fillcolor="#dcfce7"]
 		legend_expanded [label="Expandido / Closed" fillcolor="#e5e7eb"]
-		legend_open [label="Gerado / Open" fillcolor=white]
-		legend_alternative [label="Alternativas desenhadas
-arestas cinza" fillcolor=white]
+		legend_open [label="Gerado / Open
+candidato ainda nao expandido" fillcolor=white]
+		legend_alternative [label="Alternativa desenhada
+aresta cinza" fillcolor=white]
 		legend_pruned [label="Ramos omitidos por limite visual:
 estados gerados na execucao,
 mas ocultados para evitar arvore ilegivel.

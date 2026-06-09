@@ -5,21 +5,21 @@ digraph ArvoreBuscaAStar {
 	edge [color="#555555" fontname=Arial fontsize=9]
 	S1 [label="C10
 g=2,00 h=29,48 f=31,48
-b=98% coletas=1" fillcolor="#dbeafe"]
+b=98% coletas=1" fillcolor="#dbeafe" style=filled]
 	S2 [label="C11
 g=24,00 h=40,86 f=64,86
-b=76% coletas=2" fillcolor="#dbeafe"]
+b=76% coletas=2" fillcolor="#dbeafe" style=filled]
 	S1 -> S2 [label="escolhido
 20 + coleta" color="#2563eb" penwidth=2]
 	S3 [label="C10
 g=44,00 h=26,48 f=70,48
-b=56% coletas=2" fillcolor="#dbeafe"]
+b=56% coletas=2" fillcolor="#dbeafe" style=filled]
 	S2 -> S3 [label="escolhido
 20" color="#2563eb" penwidth=2]
 	S4 [label="OBJETIVO
 C4
 g=72,00 h=0,00 f=72,00
-b=28% coletas=3" fillcolor="#b6f2b6" peripheries=2]
+b=28% coletas=3" fillcolor="#b6f2b6" peripheries=2 style=filled]
 	S3 -> S4 [label="escolhido
 26 + coleta" color="#2563eb" penwidth=2]
 	S5 [label="C4
@@ -75,20 +75,17 @@ b=30% coletas=3" fillcolor=white style=filled]
 	subgraph cluster_legend {
 		color="#cccccc" fontname=Arial fontsize=11 label=Legenda
 		node [color=black fontname=Arial fontsize=9 shape=box style=filled]
-		legend_origin [label="Origem
-primeiro estado do caminho" fillcolor="#dbeafe"]
-		legend_solution [label="Caminho escolhido
-arestas azuis" fillcolor="#dbeafe"]
+		legend_solution [label="Estado no caminho escolhido
+arestas azuis ligam a rota final" fillcolor="#dbeafe"]
+		legend_recharge [label="Acao de recarga executada
+recarga tambem entra em g(s)" color="#059669" fillcolor="#dcfce7"]
 		legend_goal [label="Destino / objetivo" fillcolor="#b6f2b6" peripheries=2]
-		legend_collection [label="Ponto de coleta
-nos C; coletas aparecem em K" fillcolor="#ffedd5"]
-		legend_recharge [label="Estacao / acao de recarga
-nos R; recarga soma em g(s)" fillcolor="#dcfce7"]
 		legend_expanded [label="Expandido / Closed
 (filhos nao desenhados nesta visao)" fillcolor="#e5e7eb"]
-		legend_open [label="Gerado / Open" fillcolor=white]
-		legend_alternative [label="Alternativas desenhadas
-arestas cinza" fillcolor=white]
+		legend_open [label="Gerado / Open
+candidato ainda nao expandido" fillcolor=white]
+		legend_alternative [label="Alternativa desenhada
+aresta cinza" fillcolor=white]
 		legend_pruned [label="Ramos omitidos por limite visual:
 estados gerados na execucao,
 mas ocultados para evitar arvore ilegivel.

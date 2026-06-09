@@ -89,7 +89,6 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 </style>
 </head>
 <body>
-  <!-- Gerado com o auxilio de Inteligencia Artificial -->
   <div class="app-container">
     <header class="header">
       <h1>Navegação A* - Solução Ótima (h5)</h1>
@@ -186,16 +185,16 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
     <h3 style="font-size: 1.1rem; margin-bottom: 12px; color: var(--path);">Heurística Admissível (h5)</h3>
     <div class="images-grid" style="margin-bottom: 24px;">
       <div class="img-card" onclick="openLightbox(this)">
-        <div class="svg-container"><svg width="100%" height="100%" data-w="2190pt" data-h="679pt"
- viewBox="0.00 0.00 2190.00 679.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <div class="svg-container"><svg width="100%" height="100%" data-w="1974pt" data-h="679pt"
+ viewBox="0.00 0.00 1974.00 679.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 674.98)">
 <title>ArvoreBuscaAStar</title>
-<polygon fill="white" stroke="none" points="-4,4 -4,-674.98 2186.03,-674.98 2186.03,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="1091.01" y="-655.58" font-family="Arial" font-size="12.00">Arvore focada compactada: mostra o caminho escolhido e algumas alternativas imediatas. Ramos omitidos sao limite visual, nao poda do A*.</text>
+<polygon fill="white" stroke="none" points="-4,4 -4,-674.98 1970.03,-674.98 1970.03,4 -4,4"/>
+<text xml:space="preserve" text-anchor="middle" x="983.01" y="-655.58" font-family="Arial" font-size="12.00">Arvore focada compactada: mostra o caminho escolhido e algumas alternativas imediatas. Ramos omitidos sao limite visual, nao poda do A*.</text>
 <g id="clust1" class="cluster">
 <title>cluster_legend</title>
-<polygon fill="none" stroke="#cccccc" points="799.03,-542.73 799.03,-640.73 2174.03,-640.73 2174.03,-542.73 799.03,-542.73"/>
-<text xml:space="preserve" text-anchor="middle" x="1486.53" y="-626.28" font-family="Arial" font-size="11.00">Legenda</text>
+<polygon fill="none" stroke="#cccccc" points="799.03,-542.73 799.03,-640.73 1958.03,-640.73 1958.03,-542.73 799.03,-542.73"/>
+<text xml:space="preserve" text-anchor="middle" x="1378.53" y="-626.28" font-family="Arial" font-size="11.00">Legenda</text>
 </g>
 <!-- S1 -->
 <g id="node1" class="node">
@@ -365,87 +364,74 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 <text xml:space="preserve" text-anchor="middle" x="111.53" y="-123.65" font-family="Arial" font-size="9.00">escolhido</text>
 <text xml:space="preserve" text-anchor="middle" x="111.53" y="-113.15" font-family="Arial" font-size="9.00">17 + coleta</text>
 </g>
-<!-- legend_origin -->
-<g id="node12" class="node">
-<title>legend_origin</title>
-<polygon fill="#dbeafe" stroke="black" points="937.03,-598.98 807.03,-598.98 807.03,-562.98 937.03,-562.98 937.03,-598.98"/>
-<text xml:space="preserve" text-anchor="middle" x="872.03" y="-582.93" font-family="Arial" font-size="9.00">Origem</text>
-<text xml:space="preserve" text-anchor="middle" x="872.03" y="-572.43" font-family="Arial" font-size="9.00">primeiro estado do caminho</text>
-</g>
 <!-- legend_solution -->
-<g id="node13" class="node">
+<g id="node12" class="node">
 <title>legend_solution</title>
-<polygon fill="#dbeafe" stroke="black" points="1059.78,-598.98 964.28,-598.98 964.28,-562.98 1059.78,-562.98 1059.78,-598.98"/>
-<text xml:space="preserve" text-anchor="middle" x="1012.03" y="-582.93" font-family="Arial" font-size="9.00">Caminho escolhido</text>
-<text xml:space="preserve" text-anchor="middle" x="1012.03" y="-572.43" font-family="Arial" font-size="9.00">arestas azuis</text>
+<polygon fill="#dbeafe" stroke="black" points="946.9,-598.98 807.15,-598.98 807.15,-562.98 946.9,-562.98 946.9,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="877.03" y="-582.93" font-family="Arial" font-size="9.00">Estado no caminho escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="877.03" y="-572.43" font-family="Arial" font-size="9.00">arestas azuis ligam a rota final</text>
+</g>
+<!-- legend_recharge -->
+<g id="node13" class="node">
+<title>legend_recharge</title>
+<polygon fill="#dcfce7" stroke="#059669" points="1112.53,-598.98 973.53,-598.98 973.53,-562.98 1112.53,-562.98 1112.53,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1043.03" y="-582.93" font-family="Arial" font-size="9.00">Acao de recarga executada</text>
+<text xml:space="preserve" text-anchor="middle" x="1043.03" y="-572.43" font-family="Arial" font-size="9.00">recarga tambem entra em g(s)</text>
 </g>
 <!-- legend_goal -->
 <g id="node14" class="node">
 <title>legend_goal</title>
-<polygon fill="#b6f2b6" stroke="black" points="1177.28,-598.98 1090.78,-598.98 1090.78,-562.98 1177.28,-562.98 1177.28,-598.98"/>
-<polygon fill="none" stroke="black" points="1181.28,-602.98 1086.78,-602.98 1086.78,-558.98 1181.28,-558.98 1181.28,-602.98"/>
-<text xml:space="preserve" text-anchor="middle" x="1134.03" y="-577.68" font-family="Arial" font-size="9.00">Destino / objetivo</text>
-</g>
-<!-- legend_collection -->
-<g id="node15" class="node">
-<title>legend_collection</title>
-<polygon fill="#ffedd5" stroke="black" points="1349.28,-598.98 1208.78,-598.98 1208.78,-562.98 1349.28,-562.98 1349.28,-598.98"/>
-<text xml:space="preserve" text-anchor="middle" x="1279.03" y="-582.93" font-family="Arial" font-size="9.00">Ponto de coleta</text>
-<text xml:space="preserve" text-anchor="middle" x="1279.03" y="-572.43" font-family="Arial" font-size="9.00">nos C; coletas aparecem em K</text>
-</g>
-<!-- legend_recharge -->
-<g id="node16" class="node">
-<title>legend_recharge</title>
-<polygon fill="#dcfce7" stroke="black" points="1509.9,-598.98 1376.15,-598.98 1376.15,-562.98 1509.9,-562.98 1509.9,-598.98"/>
-<text xml:space="preserve" text-anchor="middle" x="1443.03" y="-582.93" font-family="Arial" font-size="9.00">Estacao / acao de recarga</text>
-<text xml:space="preserve" text-anchor="middle" x="1443.03" y="-572.43" font-family="Arial" font-size="9.00">nos R; recarga soma em g(s)</text>
+<polygon fill="#b6f2b6" stroke="black" points="1230.28,-598.98 1143.78,-598.98 1143.78,-562.98 1230.28,-562.98 1230.28,-598.98"/>
+<polygon fill="none" stroke="black" points="1234.28,-602.98 1139.78,-602.98 1139.78,-558.98 1234.28,-558.98 1234.28,-602.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1187.03" y="-577.68" font-family="Arial" font-size="9.00">Destino / objetivo</text>
 </g>
 <!-- legend_expanded -->
-<g id="node17" class="node">
+<g id="node15" class="node">
 <title>legend_expanded</title>
-<polygon fill="#e5e7eb" stroke="black" points="1700.9,-598.98 1537.15,-598.98 1537.15,-562.98 1700.9,-562.98 1700.9,-598.98"/>
-<text xml:space="preserve" text-anchor="middle" x="1619.03" y="-582.93" font-family="Arial" font-size="9.00">Expandido / Closed</text>
-<text xml:space="preserve" text-anchor="middle" x="1619.03" y="-572.43" font-family="Arial" font-size="9.00">(filhos nao desenhados nesta visao)</text>
+<polygon fill="#e5e7eb" stroke="black" points="1424.9,-598.98 1261.15,-598.98 1261.15,-562.98 1424.9,-562.98 1424.9,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1343.03" y="-582.93" font-family="Arial" font-size="9.00">Expandido / Closed</text>
+<text xml:space="preserve" text-anchor="middle" x="1343.03" y="-572.43" font-family="Arial" font-size="9.00">(filhos nao desenhados nesta visao)</text>
 </g>
 <!-- legend_open -->
-<g id="node18" class="node">
+<g id="node16" class="node">
 <title>legend_open</title>
-<polygon fill="white" stroke="black" points="1804.03,-598.98 1728.03,-598.98 1728.03,-562.98 1804.03,-562.98 1804.03,-598.98"/>
-<text xml:space="preserve" text-anchor="middle" x="1766.03" y="-577.68" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<polygon fill="white" stroke="black" points="1597.9,-598.98 1452.15,-598.98 1452.15,-562.98 1597.9,-562.98 1597.9,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1525.03" y="-582.93" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<text xml:space="preserve" text-anchor="middle" x="1525.03" y="-572.43" font-family="Arial" font-size="9.00">candidato ainda nao expandido</text>
 </g>
 <!-- legend_alternative -->
-<g id="node19" class="node">
+<g id="node17" class="node">
 <title>legend_alternative</title>
-<polygon fill="white" stroke="black" points="1948.65,-598.98 1831.4,-598.98 1831.4,-562.98 1948.65,-562.98 1948.65,-598.98"/>
-<text xml:space="preserve" text-anchor="middle" x="1890.03" y="-582.93" font-family="Arial" font-size="9.00">Alternativas desenhadas</text>
-<text xml:space="preserve" text-anchor="middle" x="1890.03" y="-572.43" font-family="Arial" font-size="9.00">arestas cinza</text>
+<polygon fill="white" stroke="black" points="1733.15,-598.98 1624.9,-598.98 1624.9,-562.98 1733.15,-562.98 1733.15,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1679.03" y="-582.93" font-family="Arial" font-size="9.00">Alternativa desenhada</text>
+<text xml:space="preserve" text-anchor="middle" x="1679.03" y="-572.43" font-family="Arial" font-size="9.00">aresta cinza</text>
 </g>
 <!-- legend_pruned -->
-<g id="node20" class="node">
+<g id="node18" class="node">
 <title>legend_pruned</title>
-<polygon fill="#fef3c7" stroke="black" points="2166.03,-611.23 1976.03,-611.23 1976.03,-550.73 2166.03,-550.73 2166.03,-611.23"/>
-<text xml:space="preserve" text-anchor="middle" x="2071.03" y="-598.68" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
-<text xml:space="preserve" text-anchor="middle" x="2071.03" y="-588.18" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
-<text xml:space="preserve" text-anchor="middle" x="2071.03" y="-577.68" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
-<text xml:space="preserve" text-anchor="middle" x="2071.03" y="-567.18" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
-<text xml:space="preserve" text-anchor="middle" x="2071.03" y="-556.68" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
+<polygon fill="#fef3c7" stroke="black" points="1950.03,-611.23 1760.03,-611.23 1760.03,-550.73 1950.03,-550.73 1950.03,-611.23"/>
+<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-598.68" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
+<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-588.18" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
+<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-577.68" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
+<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-567.18" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
+<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-556.68" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
 </g>
 </g>
 </svg></div>
         <div class="img-title">Árvore Focada (h5)</div>
-        <div class="img-desc">Azul é o caminho escolhido. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
+        <div class="img-desc">Azul é o caminho escolhido. Verde é ação de recarga. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
       </div>
       <div class="img-card" onclick="openLightbox(this)">
-        <div class="svg-container"><svg width="100%" height="100%" data-w="3502pt" data-h="646pt"
- viewBox="0.00 0.00 3502.00 646.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <div class="svg-container"><svg width="100%" height="100%" data-w="3290pt" data-h="646pt"
+ viewBox="0.00 0.00 3290.00 646.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 641.96)">
 <title>ArvoreBuscaCompleta</title>
-<polygon fill="white" stroke="none" points="-4,4 -4,-641.96 3498.03,-641.96 3498.03,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="1747.01" y="-622.56" font-family="Arial" font-size="12.00">Arvore completa compactada por limite visual: estados omitidos existiram na execucao, mas nao foram desenhados para manter a figura legivel.</text>
+<polygon fill="white" stroke="none" points="-4,4 -4,-641.96 3286.03,-641.96 3286.03,4 -4,4"/>
+<text xml:space="preserve" text-anchor="middle" x="1641.01" y="-622.56" font-family="Arial" font-size="12.00">Arvore completa compactada por limite visual: estados omitidos existiram na execucao, mas nao foram desenhados para manter a figura legivel.</text>
 <g id="clust1" class="cluster">
 <title>cluster_legend</title>
-<polygon fill="none" stroke="#cccccc" points="2195.03,-509.71 2195.03,-607.71 3486.03,-607.71 3486.03,-509.71 2195.03,-509.71"/>
-<text xml:space="preserve" text-anchor="middle" x="2840.53" y="-593.26" font-family="Arial" font-size="11.00">Legenda</text>
+<polygon fill="none" stroke="#cccccc" points="2195.03,-509.71 2195.03,-607.71 3274.03,-607.71 3274.03,-509.71 2195.03,-509.71"/>
+<text xml:space="preserve" text-anchor="middle" x="2734.53" y="-593.26" font-family="Arial" font-size="11.00">Legenda</text>
 </g>
 <!-- N1 -->
 <g id="node1" class="node">
@@ -668,7 +654,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 <!-- N10 -->
 <g id="node11" class="node">
 <title>N10</title>
-<ellipse fill="#e5e7eb" stroke="black" cx="695.03" cy="-183.29" rx="88.74" ry="39.6"/>
+<ellipse fill="#dcfce7" stroke="#059669" cx="695.03" cy="-183.29" rx="88.74" ry="39.6"/>
 <text xml:space="preserve" text-anchor="middle" x="695.03" y="-197.79" font-family="Arial" font-size="10.00">R2</text>
 <text xml:space="preserve" text-anchor="middle" x="695.03" y="-185.79" font-family="Arial" font-size="10.00">g=48,00 h=18,33 f=66,33</text>
 <text xml:space="preserve" text-anchor="middle" x="695.03" y="-173.79" font-family="Arial" font-size="10.00">b=58% coletas=2</text>
@@ -684,7 +670,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 <!-- N11 -->
 <g id="node13" class="node">
 <title>N11</title>
-<ellipse fill="#e5e7eb" stroke="black" cx="897.03" cy="-183.29" rx="88.74" ry="39.6"/>
+<ellipse fill="#dcfce7" stroke="#059669" cx="897.03" cy="-183.29" rx="88.74" ry="39.6"/>
 <text xml:space="preserve" text-anchor="middle" x="897.03" y="-197.79" font-family="Arial" font-size="10.00">R2</text>
 <text xml:space="preserve" text-anchor="middle" x="897.03" y="-185.79" font-family="Arial" font-size="10.00">g=48,40 h=18,33 f=66,73</text>
 <text xml:space="preserve" text-anchor="middle" x="897.03" y="-173.79" font-family="Arial" font-size="10.00">b=60% coletas=2</text>
@@ -700,7 +686,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 <!-- N12 -->
 <g id="node15" class="node">
 <title>N12</title>
-<ellipse fill="white" stroke="black" cx="1099.03" cy="-183.29" rx="88.74" ry="39.6"/>
+<ellipse fill="#dcfce7" stroke="#059669" cx="1099.03" cy="-183.29" rx="88.74" ry="39.6"/>
 <text xml:space="preserve" text-anchor="middle" x="1099.03" y="-197.79" font-family="Arial" font-size="10.00">R2</text>
 <text xml:space="preserve" text-anchor="middle" x="1099.03" y="-185.79" font-family="Arial" font-size="10.00">g=50,00 h=18,33 f=68,33</text>
 <text xml:space="preserve" text-anchor="middle" x="1099.03" y="-173.79" font-family="Arial" font-size="10.00">b=68% coletas=2</text>
@@ -716,7 +702,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 <!-- N13 -->
 <g id="node16" class="node">
 <title>N13</title>
-<ellipse fill="white" stroke="black" cx="1301.03" cy="-183.29" rx="88.74" ry="39.6"/>
+<ellipse fill="#dcfce7" stroke="#059669" cx="1301.03" cy="-183.29" rx="88.74" ry="39.6"/>
 <text xml:space="preserve" text-anchor="middle" x="1301.03" y="-197.79" font-family="Arial" font-size="10.00">R2</text>
 <text xml:space="preserve" text-anchor="middle" x="1301.03" y="-185.79" font-family="Arial" font-size="10.00">g=50,40 h=18,33 f=68,73</text>
 <text xml:space="preserve" text-anchor="middle" x="1301.03" y="-173.79" font-family="Arial" font-size="10.00">b=70% coletas=2</text>
@@ -950,69 +936,56 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 <polygon fill="#555555" stroke="#555555" points="2962.47,-338.12 2971.07,-331.92 2960.49,-331.4 2962.47,-338.12"/>
 <text xml:space="preserve" text-anchor="middle" x="2859.7" y="-366.57" font-family="Arial" font-size="9.00">31</text>
 </g>
-<!-- legend_origin -->
-<g id="node35" class="node">
-<title>legend_origin</title>
-<polygon fill="#dbeafe" stroke="black" points="2333.03,-565.96 2203.03,-565.96 2203.03,-529.96 2333.03,-529.96 2333.03,-565.96"/>
-<text xml:space="preserve" text-anchor="middle" x="2268.03" y="-549.91" font-family="Arial" font-size="9.00">Origem</text>
-<text xml:space="preserve" text-anchor="middle" x="2268.03" y="-539.41" font-family="Arial" font-size="9.00">primeiro estado do caminho</text>
-</g>
 <!-- legend_solution -->
-<g id="node36" class="node">
+<g id="node35" class="node">
 <title>legend_solution</title>
-<polygon fill="#dbeafe" stroke="black" points="2453.78,-565.96 2358.28,-565.96 2358.28,-529.96 2453.78,-529.96 2453.78,-565.96"/>
-<text xml:space="preserve" text-anchor="middle" x="2406.03" y="-549.91" font-family="Arial" font-size="9.00">Caminho escolhido</text>
-<text xml:space="preserve" text-anchor="middle" x="2406.03" y="-539.41" font-family="Arial" font-size="9.00">arestas azuis</text>
+<polygon fill="#dbeafe" stroke="black" points="2342.9,-565.96 2203.15,-565.96 2203.15,-529.96 2342.9,-529.96 2342.9,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2273.03" y="-549.91" font-family="Arial" font-size="9.00">Estado no caminho escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="2273.03" y="-539.41" font-family="Arial" font-size="9.00">arestas azuis ligam a rota final</text>
+</g>
+<!-- legend_recharge -->
+<g id="node36" class="node">
+<title>legend_recharge</title>
+<polygon fill="#dcfce7" stroke="#059669" points="2506.53,-565.96 2367.53,-565.96 2367.53,-529.96 2506.53,-529.96 2506.53,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2437.03" y="-549.91" font-family="Arial" font-size="9.00">Acao de recarga executada</text>
+<text xml:space="preserve" text-anchor="middle" x="2437.03" y="-539.41" font-family="Arial" font-size="9.00">recarga tambem entra em g(s)</text>
 </g>
 <!-- legend_goal -->
 <g id="node37" class="node">
 <title>legend_goal</title>
-<polygon fill="#b6f2b6" stroke="black" points="2569.28,-565.96 2482.78,-565.96 2482.78,-529.96 2569.28,-529.96 2569.28,-565.96"/>
-<polygon fill="none" stroke="black" points="2573.28,-569.96 2478.78,-569.96 2478.78,-525.96 2573.28,-525.96 2573.28,-569.96"/>
-<text xml:space="preserve" text-anchor="middle" x="2526.03" y="-544.66" font-family="Arial" font-size="9.00">Destino / objetivo</text>
-</g>
-<!-- legend_collection -->
-<g id="node38" class="node">
-<title>legend_collection</title>
-<polygon fill="#ffedd5" stroke="black" points="2739.28,-565.96 2598.78,-565.96 2598.78,-529.96 2739.28,-529.96 2739.28,-565.96"/>
-<text xml:space="preserve" text-anchor="middle" x="2669.03" y="-549.91" font-family="Arial" font-size="9.00">Ponto de coleta</text>
-<text xml:space="preserve" text-anchor="middle" x="2669.03" y="-539.41" font-family="Arial" font-size="9.00">nos C; coletas aparecem em K</text>
-</g>
-<!-- legend_recharge -->
-<g id="node39" class="node">
-<title>legend_recharge</title>
-<polygon fill="#dcfce7" stroke="black" points="2897.9,-565.96 2764.15,-565.96 2764.15,-529.96 2897.9,-529.96 2897.9,-565.96"/>
-<text xml:space="preserve" text-anchor="middle" x="2831.03" y="-549.91" font-family="Arial" font-size="9.00">Estacao / acao de recarga</text>
-<text xml:space="preserve" text-anchor="middle" x="2831.03" y="-539.41" font-family="Arial" font-size="9.00">nos R; recarga soma em g(s)</text>
+<polygon fill="#b6f2b6" stroke="black" points="2622.28,-565.96 2535.78,-565.96 2535.78,-529.96 2622.28,-529.96 2622.28,-565.96"/>
+<polygon fill="none" stroke="black" points="2626.28,-569.96 2531.78,-569.96 2531.78,-525.96 2626.28,-525.96 2626.28,-569.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2579.03" y="-544.66" font-family="Arial" font-size="9.00">Destino / objetivo</text>
 </g>
 <!-- legend_expanded -->
-<g id="node40" class="node">
+<g id="node38" class="node">
 <title>legend_expanded</title>
-<polygon fill="#e5e7eb" stroke="black" points="3019.15,-565.96 2922.9,-565.96 2922.9,-529.96 3019.15,-529.96 3019.15,-565.96"/>
-<text xml:space="preserve" text-anchor="middle" x="2971.03" y="-544.66" font-family="Arial" font-size="9.00">Expandido / Closed</text>
+<polygon fill="#e5e7eb" stroke="black" points="2747.15,-565.96 2650.9,-565.96 2650.9,-529.96 2747.15,-529.96 2747.15,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2699.03" y="-544.66" font-family="Arial" font-size="9.00">Expandido / Closed</text>
 </g>
 <!-- legend_open -->
-<g id="node41" class="node">
+<g id="node39" class="node">
 <title>legend_open</title>
-<polygon fill="white" stroke="black" points="3120.03,-565.96 3044.03,-565.96 3044.03,-529.96 3120.03,-529.96 3120.03,-565.96"/>
-<text xml:space="preserve" text-anchor="middle" x="3082.03" y="-544.66" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<polygon fill="white" stroke="black" points="2917.9,-565.96 2772.15,-565.96 2772.15,-529.96 2917.9,-529.96 2917.9,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2845.03" y="-549.91" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<text xml:space="preserve" text-anchor="middle" x="2845.03" y="-539.41" font-family="Arial" font-size="9.00">candidato ainda nao expandido</text>
 </g>
 <!-- legend_alternative -->
-<g id="node42" class="node">
+<g id="node40" class="node">
 <title>legend_alternative</title>
-<polygon fill="white" stroke="black" points="3262.65,-565.96 3145.4,-565.96 3145.4,-529.96 3262.65,-529.96 3262.65,-565.96"/>
-<text xml:space="preserve" text-anchor="middle" x="3204.03" y="-549.91" font-family="Arial" font-size="9.00">Alternativas desenhadas</text>
-<text xml:space="preserve" text-anchor="middle" x="3204.03" y="-539.41" font-family="Arial" font-size="9.00">arestas cinza</text>
+<polygon fill="white" stroke="black" points="3051.15,-565.96 2942.9,-565.96 2942.9,-529.96 3051.15,-529.96 3051.15,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2997.03" y="-549.91" font-family="Arial" font-size="9.00">Alternativa desenhada</text>
+<text xml:space="preserve" text-anchor="middle" x="2997.03" y="-539.41" font-family="Arial" font-size="9.00">aresta cinza</text>
 </g>
 <!-- legend_pruned -->
-<g id="node43" class="node">
+<g id="node41" class="node">
 <title>legend_pruned</title>
-<polygon fill="#fef3c7" stroke="black" points="3478.03,-578.21 3288.03,-578.21 3288.03,-517.71 3478.03,-517.71 3478.03,-578.21"/>
-<text xml:space="preserve" text-anchor="middle" x="3383.03" y="-565.66" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
-<text xml:space="preserve" text-anchor="middle" x="3383.03" y="-555.16" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
-<text xml:space="preserve" text-anchor="middle" x="3383.03" y="-544.66" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
-<text xml:space="preserve" text-anchor="middle" x="3383.03" y="-534.16" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
-<text xml:space="preserve" text-anchor="middle" x="3383.03" y="-523.66" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
+<polygon fill="#fef3c7" stroke="black" points="3266.03,-578.21 3076.03,-578.21 3076.03,-517.71 3266.03,-517.71 3266.03,-578.21"/>
+<text xml:space="preserve" text-anchor="middle" x="3171.03" y="-565.66" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
+<text xml:space="preserve" text-anchor="middle" x="3171.03" y="-555.16" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
+<text xml:space="preserve" text-anchor="middle" x="3171.03" y="-544.66" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
+<text xml:space="preserve" text-anchor="middle" x="3171.03" y="-534.16" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
+<text xml:space="preserve" text-anchor="middle" x="3171.03" y="-523.66" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
 </g>
 </g>
 </svg></div>
@@ -1024,16 +997,16 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
     <h3 style="font-size: 1.1rem; margin-bottom: 12px; color: var(--node-c);">Heurística Não Admissível (h4)</h3>
     <div class="images-grid">
       <div class="img-card" onclick="openLightbox(this)">
-        <div class="svg-container"><svg width="100%" height="100%" data-w="2602pt" data-h="548pt"
- viewBox="0.00 0.00 2602.00 548.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <div class="svg-container"><svg width="100%" height="100%" data-w="2386pt" data-h="548pt"
+ viewBox="0.00 0.00 2386.00 548.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 543.76)">
 <title>ArvoreBuscaAStar</title>
-<polygon fill="white" stroke="none" points="-4,4 -4,-543.76 2598.03,-543.76 2598.03,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="1297.01" y="-524.36" font-family="Arial" font-size="12.00">Arvore focada compactada: mostra o caminho escolhido e algumas alternativas imediatas. Ramos omitidos sao limite visual, nao poda do A*.</text>
+<polygon fill="white" stroke="none" points="-4,4 -4,-543.76 2382.03,-543.76 2382.03,4 -4,4"/>
+<text xml:space="preserve" text-anchor="middle" x="1189.01" y="-524.36" font-family="Arial" font-size="12.00">Arvore focada compactada: mostra o caminho escolhido e algumas alternativas imediatas. Ramos omitidos sao limite visual, nao poda do A*.</text>
 <g id="clust1" class="cluster">
 <title>cluster_legend</title>
-<polygon fill="none" stroke="#cccccc" points="1211.03,-411.51 1211.03,-509.51 2586.03,-509.51 2586.03,-411.51 1211.03,-411.51"/>
-<text xml:space="preserve" text-anchor="middle" x="1898.53" y="-495.06" font-family="Arial" font-size="11.00">Legenda</text>
+<polygon fill="none" stroke="#cccccc" points="1211.03,-411.51 1211.03,-509.51 2370.03,-509.51 2370.03,-411.51 1211.03,-411.51"/>
+<text xml:space="preserve" text-anchor="middle" x="1790.53" y="-495.06" font-family="Arial" font-size="11.00">Legenda</text>
 </g>
 <!-- S1 -->
 <g id="node1" class="node">
@@ -1249,87 +1222,74 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 <text xml:space="preserve" text-anchor="middle" x="431.36" y="-123.65" font-family="Arial" font-size="9.00">opcao</text>
 <text xml:space="preserve" text-anchor="middle" x="431.36" y="-113.15" font-family="Arial" font-size="9.00">24 + coleta</text>
 </g>
-<!-- legend_origin -->
-<g id="node15" class="node">
-<title>legend_origin</title>
-<polygon fill="#dbeafe" stroke="black" points="1349.03,-467.76 1219.03,-467.76 1219.03,-431.76 1349.03,-431.76 1349.03,-467.76"/>
-<text xml:space="preserve" text-anchor="middle" x="1284.03" y="-451.71" font-family="Arial" font-size="9.00">Origem</text>
-<text xml:space="preserve" text-anchor="middle" x="1284.03" y="-441.21" font-family="Arial" font-size="9.00">primeiro estado do caminho</text>
-</g>
 <!-- legend_solution -->
-<g id="node16" class="node">
+<g id="node15" class="node">
 <title>legend_solution</title>
-<polygon fill="#dbeafe" stroke="black" points="1471.78,-467.76 1376.28,-467.76 1376.28,-431.76 1471.78,-431.76 1471.78,-467.76"/>
-<text xml:space="preserve" text-anchor="middle" x="1424.03" y="-451.71" font-family="Arial" font-size="9.00">Caminho escolhido</text>
-<text xml:space="preserve" text-anchor="middle" x="1424.03" y="-441.21" font-family="Arial" font-size="9.00">arestas azuis</text>
+<polygon fill="#dbeafe" stroke="black" points="1358.9,-467.76 1219.15,-467.76 1219.15,-431.76 1358.9,-431.76 1358.9,-467.76"/>
+<text xml:space="preserve" text-anchor="middle" x="1289.03" y="-451.71" font-family="Arial" font-size="9.00">Estado no caminho escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="1289.03" y="-441.21" font-family="Arial" font-size="9.00">arestas azuis ligam a rota final</text>
+</g>
+<!-- legend_recharge -->
+<g id="node16" class="node">
+<title>legend_recharge</title>
+<polygon fill="#dcfce7" stroke="#059669" points="1524.53,-467.76 1385.53,-467.76 1385.53,-431.76 1524.53,-431.76 1524.53,-467.76"/>
+<text xml:space="preserve" text-anchor="middle" x="1455.03" y="-451.71" font-family="Arial" font-size="9.00">Acao de recarga executada</text>
+<text xml:space="preserve" text-anchor="middle" x="1455.03" y="-441.21" font-family="Arial" font-size="9.00">recarga tambem entra em g(s)</text>
 </g>
 <!-- legend_goal -->
 <g id="node17" class="node">
 <title>legend_goal</title>
-<polygon fill="#b6f2b6" stroke="black" points="1589.28,-467.76 1502.78,-467.76 1502.78,-431.76 1589.28,-431.76 1589.28,-467.76"/>
-<polygon fill="none" stroke="black" points="1593.28,-471.76 1498.78,-471.76 1498.78,-427.76 1593.28,-427.76 1593.28,-471.76"/>
-<text xml:space="preserve" text-anchor="middle" x="1546.03" y="-446.46" font-family="Arial" font-size="9.00">Destino / objetivo</text>
-</g>
-<!-- legend_collection -->
-<g id="node18" class="node">
-<title>legend_collection</title>
-<polygon fill="#ffedd5" stroke="black" points="1761.28,-467.76 1620.78,-467.76 1620.78,-431.76 1761.28,-431.76 1761.28,-467.76"/>
-<text xml:space="preserve" text-anchor="middle" x="1691.03" y="-451.71" font-family="Arial" font-size="9.00">Ponto de coleta</text>
-<text xml:space="preserve" text-anchor="middle" x="1691.03" y="-441.21" font-family="Arial" font-size="9.00">nos C; coletas aparecem em K</text>
-</g>
-<!-- legend_recharge -->
-<g id="node19" class="node">
-<title>legend_recharge</title>
-<polygon fill="#dcfce7" stroke="black" points="1921.9,-467.76 1788.15,-467.76 1788.15,-431.76 1921.9,-431.76 1921.9,-467.76"/>
-<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-451.71" font-family="Arial" font-size="9.00">Estacao / acao de recarga</text>
-<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-441.21" font-family="Arial" font-size="9.00">nos R; recarga soma em g(s)</text>
+<polygon fill="#b6f2b6" stroke="black" points="1642.28,-467.76 1555.78,-467.76 1555.78,-431.76 1642.28,-431.76 1642.28,-467.76"/>
+<polygon fill="none" stroke="black" points="1646.28,-471.76 1551.78,-471.76 1551.78,-427.76 1646.28,-427.76 1646.28,-471.76"/>
+<text xml:space="preserve" text-anchor="middle" x="1599.03" y="-446.46" font-family="Arial" font-size="9.00">Destino / objetivo</text>
 </g>
 <!-- legend_expanded -->
-<g id="node20" class="node">
+<g id="node18" class="node">
 <title>legend_expanded</title>
-<polygon fill="#e5e7eb" stroke="black" points="2112.9,-467.76 1949.15,-467.76 1949.15,-431.76 2112.9,-431.76 2112.9,-467.76"/>
-<text xml:space="preserve" text-anchor="middle" x="2031.03" y="-451.71" font-family="Arial" font-size="9.00">Expandido / Closed</text>
-<text xml:space="preserve" text-anchor="middle" x="2031.03" y="-441.21" font-family="Arial" font-size="9.00">(filhos nao desenhados nesta visao)</text>
+<polygon fill="#e5e7eb" stroke="black" points="1836.9,-467.76 1673.15,-467.76 1673.15,-431.76 1836.9,-431.76 1836.9,-467.76"/>
+<text xml:space="preserve" text-anchor="middle" x="1755.03" y="-451.71" font-family="Arial" font-size="9.00">Expandido / Closed</text>
+<text xml:space="preserve" text-anchor="middle" x="1755.03" y="-441.21" font-family="Arial" font-size="9.00">(filhos nao desenhados nesta visao)</text>
 </g>
 <!-- legend_open -->
-<g id="node21" class="node">
+<g id="node19" class="node">
 <title>legend_open</title>
-<polygon fill="white" stroke="black" points="2216.03,-467.76 2140.03,-467.76 2140.03,-431.76 2216.03,-431.76 2216.03,-467.76"/>
-<text xml:space="preserve" text-anchor="middle" x="2178.03" y="-446.46" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<polygon fill="white" stroke="black" points="2009.9,-467.76 1864.15,-467.76 1864.15,-431.76 2009.9,-431.76 2009.9,-467.76"/>
+<text xml:space="preserve" text-anchor="middle" x="1937.03" y="-451.71" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<text xml:space="preserve" text-anchor="middle" x="1937.03" y="-441.21" font-family="Arial" font-size="9.00">candidato ainda nao expandido</text>
 </g>
 <!-- legend_alternative -->
-<g id="node22" class="node">
+<g id="node20" class="node">
 <title>legend_alternative</title>
-<polygon fill="white" stroke="black" points="2360.65,-467.76 2243.4,-467.76 2243.4,-431.76 2360.65,-431.76 2360.65,-467.76"/>
-<text xml:space="preserve" text-anchor="middle" x="2302.03" y="-451.71" font-family="Arial" font-size="9.00">Alternativas desenhadas</text>
-<text xml:space="preserve" text-anchor="middle" x="2302.03" y="-441.21" font-family="Arial" font-size="9.00">arestas cinza</text>
+<polygon fill="white" stroke="black" points="2145.15,-467.76 2036.9,-467.76 2036.9,-431.76 2145.15,-431.76 2145.15,-467.76"/>
+<text xml:space="preserve" text-anchor="middle" x="2091.03" y="-451.71" font-family="Arial" font-size="9.00">Alternativa desenhada</text>
+<text xml:space="preserve" text-anchor="middle" x="2091.03" y="-441.21" font-family="Arial" font-size="9.00">aresta cinza</text>
 </g>
 <!-- legend_pruned -->
-<g id="node23" class="node">
+<g id="node21" class="node">
 <title>legend_pruned</title>
-<polygon fill="#fef3c7" stroke="black" points="2578.03,-480.01 2388.03,-480.01 2388.03,-419.51 2578.03,-419.51 2578.03,-480.01"/>
-<text xml:space="preserve" text-anchor="middle" x="2483.03" y="-467.46" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
-<text xml:space="preserve" text-anchor="middle" x="2483.03" y="-456.96" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
-<text xml:space="preserve" text-anchor="middle" x="2483.03" y="-446.46" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
-<text xml:space="preserve" text-anchor="middle" x="2483.03" y="-435.96" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
-<text xml:space="preserve" text-anchor="middle" x="2483.03" y="-425.46" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
+<polygon fill="#fef3c7" stroke="black" points="2362.03,-480.01 2172.03,-480.01 2172.03,-419.51 2362.03,-419.51 2362.03,-480.01"/>
+<text xml:space="preserve" text-anchor="middle" x="2267.03" y="-467.46" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
+<text xml:space="preserve" text-anchor="middle" x="2267.03" y="-456.96" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
+<text xml:space="preserve" text-anchor="middle" x="2267.03" y="-446.46" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
+<text xml:space="preserve" text-anchor="middle" x="2267.03" y="-435.96" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
+<text xml:space="preserve" text-anchor="middle" x="2267.03" y="-425.46" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
 </g>
 </g>
 </svg></div>
         <div class="img-title">Árvore Focada (h4)</div>
-        <div class="img-desc">Azul é o caminho escolhido. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
+        <div class="img-desc">Azul é o caminho escolhido. Verde é ação de recarga. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
       </div>
       <div class="img-card" onclick="openLightbox(this)">
-        <div class="svg-container"><svg width="100%" height="100%" data-w="3421pt" data-h="613pt"
- viewBox="0.00 0.00 3421.00 613.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <div class="svg-container"><svg width="100%" height="100%" data-w="3209pt" data-h="613pt"
+ viewBox="0.00 0.00 3209.00 613.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 609.26)">
 <title>ArvoreBuscaCompleta</title>
-<polygon fill="white" stroke="none" points="-4,4 -4,-609.26 3417.03,-609.26 3417.03,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="1706.51" y="-589.86" font-family="Arial" font-size="12.00">Arvore completa compactada por limite visual: estados omitidos existiram na execucao, mas nao foram desenhados para manter a figura legivel.</text>
+<polygon fill="white" stroke="none" points="-4,4 -4,-609.26 3205.03,-609.26 3205.03,4 -4,4"/>
+<text xml:space="preserve" text-anchor="middle" x="1600.51" y="-589.86" font-family="Arial" font-size="12.00">Arvore completa compactada por limite visual: estados omitidos existiram na execucao, mas nao foram desenhados para manter a figura legivel.</text>
 <g id="clust1" class="cluster">
 <title>cluster_legend</title>
-<polygon fill="none" stroke="#cccccc" points="2114.03,-477.01 2114.03,-575.01 3405.03,-575.01 3405.03,-477.01 2114.03,-477.01"/>
-<text xml:space="preserve" text-anchor="middle" x="2759.53" y="-560.56" font-family="Arial" font-size="11.00">Legenda</text>
+<polygon fill="none" stroke="#cccccc" points="2114.03,-477.01 2114.03,-575.01 3193.03,-575.01 3193.03,-477.01 2114.03,-477.01"/>
+<text xml:space="preserve" text-anchor="middle" x="2653.53" y="-560.56" font-family="Arial" font-size="11.00">Legenda</text>
 </g>
 <!-- N1 -->
 <g id="node1" class="node">
@@ -1713,69 +1673,56 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 <polygon fill="#555555" stroke="#555555" points="2541.47,-305.42 2550.07,-299.23 2539.49,-298.71 2541.47,-305.42"/>
 <text xml:space="preserve" text-anchor="middle" x="2455.95" y="-333.87" font-family="Arial" font-size="9.00">24 + coleta</text>
 </g>
-<!-- legend_origin -->
-<g id="node27" class="node">
-<title>legend_origin</title>
-<polygon fill="#dbeafe" stroke="black" points="2252.03,-533.26 2122.03,-533.26 2122.03,-497.26 2252.03,-497.26 2252.03,-533.26"/>
-<text xml:space="preserve" text-anchor="middle" x="2187.03" y="-517.21" font-family="Arial" font-size="9.00">Origem</text>
-<text xml:space="preserve" text-anchor="middle" x="2187.03" y="-506.71" font-family="Arial" font-size="9.00">primeiro estado do caminho</text>
-</g>
 <!-- legend_solution -->
-<g id="node28" class="node">
+<g id="node27" class="node">
 <title>legend_solution</title>
-<polygon fill="#dbeafe" stroke="black" points="2372.78,-533.26 2277.28,-533.26 2277.28,-497.26 2372.78,-497.26 2372.78,-533.26"/>
-<text xml:space="preserve" text-anchor="middle" x="2325.03" y="-517.21" font-family="Arial" font-size="9.00">Caminho escolhido</text>
-<text xml:space="preserve" text-anchor="middle" x="2325.03" y="-506.71" font-family="Arial" font-size="9.00">arestas azuis</text>
+<polygon fill="#dbeafe" stroke="black" points="2261.9,-533.26 2122.15,-533.26 2122.15,-497.26 2261.9,-497.26 2261.9,-533.26"/>
+<text xml:space="preserve" text-anchor="middle" x="2192.03" y="-517.21" font-family="Arial" font-size="9.00">Estado no caminho escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="2192.03" y="-506.71" font-family="Arial" font-size="9.00">arestas azuis ligam a rota final</text>
+</g>
+<!-- legend_recharge -->
+<g id="node28" class="node">
+<title>legend_recharge</title>
+<polygon fill="#dcfce7" stroke="#059669" points="2425.53,-533.26 2286.53,-533.26 2286.53,-497.26 2425.53,-497.26 2425.53,-533.26"/>
+<text xml:space="preserve" text-anchor="middle" x="2356.03" y="-517.21" font-family="Arial" font-size="9.00">Acao de recarga executada</text>
+<text xml:space="preserve" text-anchor="middle" x="2356.03" y="-506.71" font-family="Arial" font-size="9.00">recarga tambem entra em g(s)</text>
 </g>
 <!-- legend_goal -->
 <g id="node29" class="node">
 <title>legend_goal</title>
-<polygon fill="#b6f2b6" stroke="black" points="2488.28,-533.26 2401.78,-533.26 2401.78,-497.26 2488.28,-497.26 2488.28,-533.26"/>
-<polygon fill="none" stroke="black" points="2492.28,-537.26 2397.78,-537.26 2397.78,-493.26 2492.28,-493.26 2492.28,-537.26"/>
-<text xml:space="preserve" text-anchor="middle" x="2445.03" y="-511.96" font-family="Arial" font-size="9.00">Destino / objetivo</text>
-</g>
-<!-- legend_collection -->
-<g id="node30" class="node">
-<title>legend_collection</title>
-<polygon fill="#ffedd5" stroke="black" points="2658.28,-533.26 2517.78,-533.26 2517.78,-497.26 2658.28,-497.26 2658.28,-533.26"/>
-<text xml:space="preserve" text-anchor="middle" x="2588.03" y="-517.21" font-family="Arial" font-size="9.00">Ponto de coleta</text>
-<text xml:space="preserve" text-anchor="middle" x="2588.03" y="-506.71" font-family="Arial" font-size="9.00">nos C; coletas aparecem em K</text>
-</g>
-<!-- legend_recharge -->
-<g id="node31" class="node">
-<title>legend_recharge</title>
-<polygon fill="#dcfce7" stroke="black" points="2816.9,-533.26 2683.15,-533.26 2683.15,-497.26 2816.9,-497.26 2816.9,-533.26"/>
-<text xml:space="preserve" text-anchor="middle" x="2750.03" y="-517.21" font-family="Arial" font-size="9.00">Estacao / acao de recarga</text>
-<text xml:space="preserve" text-anchor="middle" x="2750.03" y="-506.71" font-family="Arial" font-size="9.00">nos R; recarga soma em g(s)</text>
+<polygon fill="#b6f2b6" stroke="black" points="2541.28,-533.26 2454.78,-533.26 2454.78,-497.26 2541.28,-497.26 2541.28,-533.26"/>
+<polygon fill="none" stroke="black" points="2545.28,-537.26 2450.78,-537.26 2450.78,-493.26 2545.28,-493.26 2545.28,-537.26"/>
+<text xml:space="preserve" text-anchor="middle" x="2498.03" y="-511.96" font-family="Arial" font-size="9.00">Destino / objetivo</text>
 </g>
 <!-- legend_expanded -->
-<g id="node32" class="node">
+<g id="node30" class="node">
 <title>legend_expanded</title>
-<polygon fill="#e5e7eb" stroke="black" points="2938.15,-533.26 2841.9,-533.26 2841.9,-497.26 2938.15,-497.26 2938.15,-533.26"/>
-<text xml:space="preserve" text-anchor="middle" x="2890.03" y="-511.96" font-family="Arial" font-size="9.00">Expandido / Closed</text>
+<polygon fill="#e5e7eb" stroke="black" points="2666.15,-533.26 2569.9,-533.26 2569.9,-497.26 2666.15,-497.26 2666.15,-533.26"/>
+<text xml:space="preserve" text-anchor="middle" x="2618.03" y="-511.96" font-family="Arial" font-size="9.00">Expandido / Closed</text>
 </g>
 <!-- legend_open -->
-<g id="node33" class="node">
+<g id="node31" class="node">
 <title>legend_open</title>
-<polygon fill="white" stroke="black" points="3039.03,-533.26 2963.03,-533.26 2963.03,-497.26 3039.03,-497.26 3039.03,-533.26"/>
-<text xml:space="preserve" text-anchor="middle" x="3001.03" y="-511.96" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<polygon fill="white" stroke="black" points="2836.9,-533.26 2691.15,-533.26 2691.15,-497.26 2836.9,-497.26 2836.9,-533.26"/>
+<text xml:space="preserve" text-anchor="middle" x="2764.03" y="-517.21" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<text xml:space="preserve" text-anchor="middle" x="2764.03" y="-506.71" font-family="Arial" font-size="9.00">candidato ainda nao expandido</text>
 </g>
 <!-- legend_alternative -->
-<g id="node34" class="node">
+<g id="node32" class="node">
 <title>legend_alternative</title>
-<polygon fill="white" stroke="black" points="3181.65,-533.26 3064.4,-533.26 3064.4,-497.26 3181.65,-497.26 3181.65,-533.26"/>
-<text xml:space="preserve" text-anchor="middle" x="3123.03" y="-517.21" font-family="Arial" font-size="9.00">Alternativas desenhadas</text>
-<text xml:space="preserve" text-anchor="middle" x="3123.03" y="-506.71" font-family="Arial" font-size="9.00">arestas cinza</text>
+<polygon fill="white" stroke="black" points="2970.15,-533.26 2861.9,-533.26 2861.9,-497.26 2970.15,-497.26 2970.15,-533.26"/>
+<text xml:space="preserve" text-anchor="middle" x="2916.03" y="-517.21" font-family="Arial" font-size="9.00">Alternativa desenhada</text>
+<text xml:space="preserve" text-anchor="middle" x="2916.03" y="-506.71" font-family="Arial" font-size="9.00">aresta cinza</text>
 </g>
 <!-- legend_pruned -->
-<g id="node35" class="node">
+<g id="node33" class="node">
 <title>legend_pruned</title>
-<polygon fill="#fef3c7" stroke="black" points="3397.03,-545.51 3207.03,-545.51 3207.03,-485.01 3397.03,-485.01 3397.03,-545.51"/>
-<text xml:space="preserve" text-anchor="middle" x="3302.03" y="-532.96" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
-<text xml:space="preserve" text-anchor="middle" x="3302.03" y="-522.46" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
-<text xml:space="preserve" text-anchor="middle" x="3302.03" y="-511.96" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
-<text xml:space="preserve" text-anchor="middle" x="3302.03" y="-501.46" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
-<text xml:space="preserve" text-anchor="middle" x="3302.03" y="-490.96" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
+<polygon fill="#fef3c7" stroke="black" points="3185.03,-545.51 2995.03,-545.51 2995.03,-485.01 3185.03,-485.01 3185.03,-545.51"/>
+<text xml:space="preserve" text-anchor="middle" x="3090.03" y="-532.96" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
+<text xml:space="preserve" text-anchor="middle" x="3090.03" y="-522.46" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
+<text xml:space="preserve" text-anchor="middle" x="3090.03" y="-511.96" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
+<text xml:space="preserve" text-anchor="middle" x="3090.03" y="-501.46" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
+<text xml:space="preserve" text-anchor="middle" x="3090.03" y="-490.96" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
 </g>
 </g>
 </svg></div>
@@ -1793,7 +1740,8 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
       <p style="margin-bottom: 24px; color: var(--text-mut);">Ela é mais adequada ao problema porque leva em conta a bateria atual do agente e o número de coletas restantes, mas continua <strong>admissível</strong> por usar apenas estimativas otimistas (distância em linha reta, tempo mínimo sem desvios).</p>
 
       <h3 style="font-size: 1.3rem; margin-bottom: 8px;">2. A Heurística Não Admissível (h4 - Inflada)</h3>
-      <p style="margin-bottom: 12px; color: var(--text-mut);">Foi considerada uma heurística não admissível, chamada de heurística inflada: <code>h4(s) = α * h5(s)</code>. Neste caso, utilizamos α = 1.5. Essa heurística pode tornar a busca mais agressiva e reduzir o número de estados expandidos, mas pode superestimar o custo real restante. Por isso, <strong>ela não garante que o A* encontre o caminho ótimo</strong>.</p>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">Foi considerada uma heurística não admissível, chamada de heurística inflada: <code>h4(s) = α * h5(s)</code>. Neste caso, utilizamos α = 1,5. Essa heurística pode tornar a busca mais agressiva e reduzir o número de estados expandidos, mas pode superestimar o custo real restante. Por isso, <strong>ela não garante que o A* encontre o caminho ótimo</strong>.</p>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">Nos testes, foram usados dois valores de referência para α. O valor <code>1,5</code> representa uma inflação moderada, boa para mostrar de forma simples que a h4 pode retornar custo maior que a h5, como em <code>C10 -> C4</code>. Já o valor <code>5,0</code> torna a busca mais direcionada e ajuda a evidenciar melhor o efeito da não admissibilidade em cenários com recarga, como <code>C1 -> C3</code>, onde a h4 reduz expansões, mas pode escolher uma rota mais longa.</p>
       
       <div class="split" style="margin-top: 24px;">
         <div style="border: 1px solid var(--border); padding: 16px; border-radius: 8px;">
@@ -1833,7 +1781,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
       <h3 style="font-size: 1.3rem; margin-top: 40px; margin-bottom: 16px;">4. Possíveis Soluções e a Solução Escolhida pelo A*</h3>
       <p style="margin-bottom: 12px; color: var(--text-mut);">Durante a busca, o A* com a heurística admissível avalia várias rotas em potencial antes de cravar a melhor. A solução escolhida pelo algoritmo é sempre aquela que minimiza <strong>f(n) = g(n) + h(n)</strong>.</p>
       <div id="topic4-container" style="background: var(--bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
-        <!-- Gerado dinamicamente via JS -->
+        <!-- Preenchido dinamicamente pelo JavaScript da pagina -->
       </div>
       
       <h3 style="font-size: 1.3rem; margin-top: 40px; margin-bottom: 16px;">5. Dinâmica da Open List (Permanência de Estados)</h3>
@@ -1843,7 +1791,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
     </div>
   </div>
 
-  <!-- Lightbox -->
+  <!-- Janela de ampliacao das imagens -->
   <div class="lightbox" id="lightbox" onclick="closeLightbox()">
     <div class="lb-close">&times;</div>
     <div id="lb-content" style="width: 90vw; height: 90vh; display: flex; justify-content: center; align-items: center; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);"></div>

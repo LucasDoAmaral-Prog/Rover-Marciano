@@ -611,13 +611,14 @@ def generate_full_tree_image(graph, result, start_node, goal_node, output_dir="r
 # 3. Geracao da interface HTML interativa
 # ═══════════════════════════════════════════════════════════════════════════
 
-def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_file="resultado_busca.html"):
+def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_file="resultado_busca.html", h4_alpha=5):
     """Gera um arquivo HTML limpo, claro e acadêmico, com lightbox para as imagens."""
     nodes_js = _build_nodes_js(graph)
     edges_js = _build_edges_js(graph)
     from heuristica import h5, h4
     from functools import partial
-    alpha = 5 # mesmo valor usado no main.py
+    alpha = h4_alpha
+    alpha_text = _fmt_edge_cost(alpha)
     
     path_js = _build_path_js(result_h5, graph, goal_node, h5)
     heuristic_table_js = _build_heuristic_table_js(result_h5, graph, start_node, goal_node, h5)
@@ -781,7 +782,7 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
 
     <div class="section-title">Detalhamento da Heurística (h4) por Passo</div>
     <div class="panel table-panel">
-      <p style="margin-bottom: 12px; color: var(--text-mut);">A tabela abaixo usa os mesmos estados e os mesmos termos mínimos da tabela h5. A diferença é que a heurística inflada calcula <code>h4(s) = α × h5(s)</code>, com <code>α = 5</code>, e depois calcula <code>f(s) = g(s) + h4(s)</code>.</p>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">A tabela abaixo usa os mesmos estados e os mesmos termos mínimos da tabela h5. A diferença é que a heurística inflada calcula <code>h4(s) = α × h5(s)</code>, com <code>α = {alpha_text}</code>, e depois calcula <code>f(s) = g(s) + h4(s)</code>.</p>
       <table class="heuristic-table">
         <thead>
           <tr style="border-bottom: 2px solid var(--border);">
@@ -800,7 +801,7 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
         <tbody id="heuristic-h4-tbody">
         </tbody>
       </table>
-      <p class="formula-note">Para comparação, <code>Tdesloc_min(s)</code>, <code>Tcoleta_min(s)</code>, <code>Trecarga_min(s)</code>, <code>r(s)</code> e <code>g(s)</code> permanecem iguais. Apenas o valor da estimativa muda: <code>h4(s) = 5 × h5(s)</code>. Por isso, a h4 pode ficar mais agressiva, mas deixa de ser admissível porque pode superestimar o custo restante.</p>
+      <p class="formula-note">Para comparação, <code>Tdesloc_min(s)</code>, <code>Tcoleta_min(s)</code>, <code>Trecarga_min(s)</code>, <code>r(s)</code> e <code>g(s)</code> permanecem iguais. Apenas o valor da estimativa muda: <code>h4(s) = {alpha_text} × h5(s)</code>. Por isso, a h4 pode ficar mais agressiva, mas deixa de ser admissível porque pode superestimar o custo restante.</p>
     </div>
 
     <div class="section-title">Árvores de Busca Geradas</div>
@@ -845,7 +846,8 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
       <p style="margin-bottom: 24px; color: var(--text-mut);">Ela é mais adequada ao problema porque leva em conta a bateria atual do agente e o número de coletas restantes, mas continua <strong>admissível</strong> por usar apenas estimativas otimistas (distância em linha reta, tempo mínimo sem desvios).</p>
 
       <h3 style="font-size: 1.3rem; margin-bottom: 8px;">2. A Heurística Não Admissível (h4 - Inflada)</h3>
-      <p style="margin-bottom: 12px; color: var(--text-mut);">Foi considerada uma heurística não admissível, chamada de heurística inflada: <code>h4(s) = α * h5(s)</code>. Neste caso, utilizamos α = 5. Essa heurística pode tornar a busca mais agressiva e reduzir o número de estados expandidos, mas pode superestimar o custo real restante. Por isso, <strong>ela não garante que o A* encontre o caminho ótimo</strong>.</p>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">Foi considerada uma heurística não admissível, chamada de heurística inflada: <code>h4(s) = α * h5(s)</code>. Neste caso, utilizamos α = {alpha_text}. Essa heurística pode tornar a busca mais agressiva e reduzir o número de estados expandidos, mas pode superestimar o custo real restante. Por isso, <strong>ela não garante que o A* encontre o caminho ótimo</strong>.</p>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">Nos testes, foram usados dois valores de referência para α. O valor <code>1,5</code> representa uma inflação moderada, boa para mostrar de forma simples que a h4 pode retornar custo maior que a h5, como em <code>C10 -> C4</code>. Já o valor <code>5,0</code> torna a busca mais direcionada e ajuda a evidenciar melhor o efeito da não admissibilidade em cenários com recarga, como <code>C1 -> C3</code>, onde a h4 reduz expansões, mas pode escolher uma rota mais longa.</p>
       
       <div class="split" style="margin-top: 24px;">
         <div style="border: 1px solid var(--border); padding: 16px; border-radius: 8px;">

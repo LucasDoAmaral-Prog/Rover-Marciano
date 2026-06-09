@@ -111,6 +111,12 @@ Execucao com pasta de saida personalizada:
 python main.py --start C10 --goal C4 --output-dir results
 ```
 
+Execucao escolhendo o fator da heuristica h4:
+
+```bash
+python main.py --start C10 --goal C4 --alpha 1.5 --output-dir results_c10_c4
+```
+
 Execucao controlando a profundidade da arvore impressa no terminal:
 
 ```bash
@@ -125,6 +131,7 @@ python main.py --tree-depth 2
 | `--goal` | `C4` | No objetivo final da missao. |
 | `--output-dir` | `results` | Pasta onde serao salvos HTML, SVG e DOT. |
 | `--tree-depth` | `3` | Profundidade maxima exibida no terminal para evitar poluicao visual. |
+| `--alpha` | `5.0` | Fator de inflacao usado na heuristica `h4`. |
 
 ## Como acessar os resultados
 
@@ -220,11 +227,31 @@ A heuristica `h4` usa a propria `h5` multiplicada por um fator `alpha`:
 h4(s) = alpha * h5(s)
 ```
 
-No projeto, o valor usado e:
+No projeto, o valor padrao e:
 
 ```text
 alpha = 5
 ```
+
+Durante os testes, foram mantidos dois valores de referencia para `alpha`,
+porque eles ajudam a observar comportamentos diferentes da heuristica inflada.
+O valor `alpha = 1.5` foi adotado como uma inflacao moderada: ele ainda mantem
+a busca proxima do comportamento da heuristica admissivel, mas ja e suficiente
+para mostrar, no caso `C10 -> C4`, que a h4 pode escolher uma rota de custo
+maior que a h5. Esse valor e util para uma demonstracao simples da perda de
+otimalidade sem tornar a estimativa excessivamente agressiva.
+
+O valor `alpha = 5.0` foi adotado apos testes com cenarios que envolvem recarga.
+Com esse fator, a h4 fica mais direcionada ao objetivo e reduz bastante a
+quantidade de estados expandidos, deixando mais evidente o efeito pratico de
+uma heuristica nao admissivel. No caso `C1 -> C3`, por exemplo, a h4 passa a
+escolher um caminho mais longo, com recarga adicional, enquanto a h5 preserva a
+solucao de menor custo. Assim, `alpha = 5.0` funciona melhor para demonstrar o
+impacto da heuristica inflada em missoes mais longas e com restricao de bateria.
+
+Portanto, `alpha = 1.5` e usado para uma comparacao mais simples e controlada,
+enquanto `alpha = 5.0` e usado para evidenciar melhor, em cenarios com recarga,
+o ganho de direcionamento da busca e o risco de perder otimalidade.
 
 | Caracteristica | Consequencia |
 |---|---|
@@ -263,6 +290,7 @@ Configuracao padrao:
 |---|---:|
 | Origem | `C10` |
 | Objetivo | `C4` |
+| Alpha da h4 | `1.5` |
 | Bateria inicial | `100%` |
 | Coletas minimas | `3` |
 | Total de nos | `21` |
