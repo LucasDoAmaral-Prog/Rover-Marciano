@@ -1,11 +1,9 @@
 """
-visualizacao.py - Gera as saídas visuais para o algoritmo de busca A*
-1. Árvore de texto no console
-2. Árvore focada em imagem (caminho ótimo + alternativas imediatas)
-3. Árvore completa compactada em imagem (visão apresentável da busca)
-4. Página HTML interativa com mapa, painel e imagens embutidas.
+Rotinas de visualizacao da busca A*.
 
-Gerado com o auxílio de Inteligência Artificial.
+Este arquivo junta a arvore impressa no terminal, as imagens em Graphviz e o
+relatorio HTML. A ideia e deixar a execucao conferivel sem obrigar ninguem a
+reconstruir a busca inteira olhando apenas para o console.
 """
 
 import os
@@ -138,6 +136,8 @@ COLOR_SOLUTION = "#dbeafe"
 COLOR_EXPANDED = "#e5e7eb"
 COLOR_OPEN = "white"
 COLOR_GOAL = "#b6f2b6"
+COLOR_RECHARGE = "#dcfce7"
+COLOR_RECHARGE_BORDER = "#059669"
 COLOR_PRUNED = "#fef3c7"
 
 FOCUSED_MAX_ALTERNATIVES_PER_STEP = 3
@@ -176,6 +176,23 @@ def _tree_node_label(state, edge_data, is_goal=False, is_recharge_action=False):
     return label
 
 
+def _tree_node_attrs(is_goal=False, is_recharge_action=False, is_path=False, is_expanded=False, dashed=False):
+    attrs = {"style": "filled,dashed" if dashed else "filled"}
+
+    if is_goal:
+        attrs.update({"fillcolor": COLOR_GOAL, "peripheries": "2"})
+    elif is_recharge_action:
+        attrs.update({"fillcolor": COLOR_RECHARGE, "color": COLOR_RECHARGE_BORDER})
+    elif is_path:
+        attrs.update({"fillcolor": COLOR_SOLUTION})
+    elif is_expanded:
+        attrs.update({"fillcolor": COLOR_EXPANDED})
+    else:
+        attrs.update({"fillcolor": COLOR_OPEN})
+
+    return attrs
+
+
 def _add_graphviz_legend(dot, focused=False):
     expanded_label = "Expandido / Closed"
     if focused:
@@ -184,14 +201,12 @@ def _add_graphviz_legend(dot, focused=False):
     with dot.subgraph(name="cluster_legend") as legend:
         legend.attr(label="Legenda", fontname="Arial", fontsize="11", color="#cccccc")
         legend.attr("node", shape="box", style="filled", fontname="Arial", fontsize="9", color="black")
-        legend.node("legend_origin", "Origem\nprimeiro estado do caminho", fillcolor=COLOR_SOLUTION)
-        legend.node("legend_solution", "Caminho escolhido\narestas azuis", fillcolor=COLOR_SOLUTION)
+        legend.node("legend_solution", "Estado no caminho escolhido\narestas azuis ligam a rota final", fillcolor=COLOR_SOLUTION)
+        legend.node("legend_recharge", "Acao de recarga executada\nrecarga tambem entra em g(s)", fillcolor=COLOR_RECHARGE, color=COLOR_RECHARGE_BORDER)
         legend.node("legend_goal", "Destino / objetivo", fillcolor=COLOR_GOAL, peripheries="2")
-        legend.node("legend_collection", "Ponto de coleta\nnos C; coletas aparecem em K", fillcolor="#ffedd5")
-        legend.node("legend_recharge", "Estacao / acao de recarga\nnos R; recarga soma em g(s)", fillcolor="#dcfce7")
         legend.node("legend_expanded", expanded_label, fillcolor=COLOR_EXPANDED)
-        legend.node("legend_open", "Gerado / Open", fillcolor=COLOR_OPEN)
-        legend.node("legend_alternative", "Alternativas desenhadas\narestas cinza", fillcolor=COLOR_OPEN)
+        legend.node("legend_open", "Gerado / Open\ncandidato ainda nao expandido", fillcolor=COLOR_OPEN)
+        legend.node("legend_alternative", "Alternativa desenhada\naresta cinza", fillcolor=COLOR_OPEN)
         legend.node(
             "legend_pruned",
             "Ramos omitidos por limite visual:\n"
@@ -254,21 +269,20 @@ def _path_transition_edges(path_states, successors_of):
 def _add_tree_node(dot, node_id, state, edge_data, result, path_set, expanded_set):
     is_goal = state == result.final_state
     is_path = state in path_set
+    is_recharge = "recarregar" in edge_data.action
     label = _tree_node_label(
         state,
         edge_data,
         is_goal=is_goal,
-        is_recharge_action="recarregar" in edge_data.action,
+        is_recharge_action=is_recharge,
     )
-
-    if is_goal:
-        dot.node(node_id, label=label, fillcolor=COLOR_GOAL, peripheries="2")
-    elif is_path:
-        dot.node(node_id, label=label, fillcolor=COLOR_SOLUTION)
-    elif state in expanded_set:
-        dot.node(node_id, label=label, fillcolor=COLOR_EXPANDED)
-    else:
-        dot.node(node_id, label=label, fillcolor=COLOR_OPEN)
+    attrs = _tree_node_attrs(
+        is_goal=is_goal,
+        is_recharge_action=is_recharge,
+        is_path=is_path,
+        is_expanded=state in expanded_set,
+    )
+    dot.node(node_id, label=label, **attrs)
 
 
 def _add_pruned_summary(dot, parent_id, summary_id, count):
@@ -361,10 +375,12 @@ def generate_focused_tree_image(graph, result, start_node, goal_node, output_dir
 
         label = _tree_node_label(state, edge_data, is_goal, is_recharge)
 
-        if is_goal:
-            dot.node(node_id, label=label, fillcolor=COLOR_GOAL, peripheries="2")
-        else:
-            dot.node(node_id, label=label, fillcolor=COLOR_SOLUTION)
+        attrs = _tree_node_attrs(
+            is_goal=is_goal,
+            is_recharge_action=is_recharge,
+            is_path=True,
+        )
+        dot.node(node_id, label=label, **attrs)
 
         if i > 0:
             prev_state = path_states[i - 1]
@@ -398,9 +414,12 @@ def generate_focused_tree_image(graph, result, start_node, goal_node, output_dir
             state_to_id[child] = child_id
 
             label = _tree_node_label(child, succ_edge, is_recharge_action="recarregar" in succ_edge.action)
-            fillcolor = COLOR_EXPANDED if was_expanded else COLOR_OPEN
-            node_style = "filled,dashed" if was_expanded else "filled"
-            dot.node(child_id, label=label, fillcolor=fillcolor, style=node_style)
+            attrs = _tree_node_attrs(
+                is_recharge_action="recarregar" in succ_edge.action,
+                is_expanded=was_expanded,
+                dashed=was_expanded,
+            )
+            dot.node(child_id, label=label, **attrs)
 
             elabel = _edge_label_between(parent_g, succ_edge)
             dot.edge(parent_id, child_id, label=f"opcao\n{elabel}", color="#9ca3af")
@@ -589,7 +608,7 @@ def generate_full_tree_image(graph, result, start_node, goal_node, output_dir="r
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 3. Geração da Interface HTML Interativa (Clean Agency Style)
+# 3. Geracao da interface HTML interativa
 # ═══════════════════════════════════════════════════════════════════════════
 
 def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_file="resultado_busca.html"):
@@ -598,7 +617,7 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
     edges_js = _build_edges_js(graph)
     from heuristica import h5, h4
     from functools import partial
-    alpha = 1.5 # matching main.py
+    alpha = 5 # mesmo valor usado no main.py
     
     path_js = _build_path_js(result_h5, graph, goal_node, h5)
     heuristic_table_js = _build_heuristic_table_js(result_h5, graph, start_node, goal_node, h5)
@@ -616,18 +635,18 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
 
     stats_js = _build_stats_js(result_h5, start_node, goal_node, h_start_h5)
     
-    path_h4_js = _build_path_js(result_h4, graph, goal_node, partial(h4, alpha=1.5))
+    path_h4_js = _build_path_js(result_h4, graph, goal_node, partial(h4, alpha=alpha))
     stats_h4_js = _build_stats_js(result_h4, start_node, goal_node, h_start_h4)
     
     tree_h4_js = _build_focused_tree_js(result_h4)
     
     output_dir = os.path.dirname(output_file) or "."
     
-    # Generate images for h5 first
+    # Gera primeiro as imagens da h5 para salvar com sufixo proprio.
     generate_focused_tree_image(graph, result_h5, start_node, goal_node, output_dir)
     generate_full_tree_image(graph, result_h5, start_node, goal_node, output_dir)
     
-    # Rename h5 images so they don't get overwritten
+    # Renomeia para nao serem sobrescritas quando a h4 for desenhada.
     import shutil
     try:
         shutil.move(os.path.join(output_dir, "arvore_busca_focada.svg"), os.path.join(output_dir, "arvore_busca_focada_h5.svg"))
@@ -635,11 +654,11 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
     except:
         pass
         
-    # Generate images for h4
+    # Agora gera as imagens da h4, usando o mesmo formato visual.
     generate_focused_tree_image(graph, result_h4, start_node, goal_node, output_dir)
     generate_full_tree_image(graph, result_h4, start_node, goal_node, output_dir)
     
-    # Rename h4 images
+    # Renomeia as imagens da h4 para ficarem lado a lado no relatorio.
     try:
         shutil.move(os.path.join(output_dir, "arvore_busca_focada.svg"), os.path.join(output_dir, "arvore_busca_focada_h4.svg"))
         shutil.move(os.path.join(output_dir, "arvore_busca_completa.svg"), os.path.join(output_dir, "arvore_busca_completa_h4.svg"))
@@ -696,7 +715,6 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
 <style>{_get_css()}</style>
 </head>
 <body>
-  <!-- Gerado com o auxilio de Inteligencia Artificial -->
   <div class="app-container">
     <header class="header">
       <h1>Navegação A* - Solução Ótima (h5)</h1>
@@ -763,7 +781,7 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
 
     <div class="section-title">Detalhamento da Heurística (h4) por Passo</div>
     <div class="panel table-panel">
-      <p style="margin-bottom: 12px; color: var(--text-mut);">A tabela abaixo usa os mesmos estados e os mesmos termos mínimos da tabela h5. A diferença é que a heurística inflada calcula <code>h4(s) = α × h5(s)</code>, com <code>α = 1,5</code>, e depois calcula <code>f(s) = g(s) + h4(s)</code>.</p>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">A tabela abaixo usa os mesmos estados e os mesmos termos mínimos da tabela h5. A diferença é que a heurística inflada calcula <code>h4(s) = α × h5(s)</code>, com <code>α = 5</code>, e depois calcula <code>f(s) = g(s) + h4(s)</code>.</p>
       <table class="heuristic-table">
         <thead>
           <tr style="border-bottom: 2px solid var(--border);">
@@ -782,7 +800,7 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
         <tbody id="heuristic-h4-tbody">
         </tbody>
       </table>
-      <p class="formula-note">Para comparação, <code>Tdesloc_min(s)</code>, <code>Tcoleta_min(s)</code>, <code>Trecarga_min(s)</code>, <code>r(s)</code> e <code>g(s)</code> permanecem iguais. Apenas o valor da estimativa muda: <code>h4(s) = 1,5 × h5(s)</code>. Por isso, a h4 pode ficar mais agressiva, mas deixa de ser admissível porque pode superestimar o custo restante.</p>
+      <p class="formula-note">Para comparação, <code>Tdesloc_min(s)</code>, <code>Tcoleta_min(s)</code>, <code>Trecarga_min(s)</code>, <code>r(s)</code> e <code>g(s)</code> permanecem iguais. Apenas o valor da estimativa muda: <code>h4(s) = 5 × h5(s)</code>. Por isso, a h4 pode ficar mais agressiva, mas deixa de ser admissível porque pode superestimar o custo restante.</p>
     </div>
 
     <div class="section-title">Árvores de Busca Geradas</div>
@@ -795,7 +813,7 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
       <div class="img-card" onclick="openLightbox(this)">
         <div class="svg-container">{svg_foc_h5}</div>
         <div class="img-title">Árvore Focada (h5)</div>
-        <div class="img-desc">Azul é o caminho escolhido. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
+        <div class="img-desc">Azul é o caminho escolhido. Verde é ação de recarga. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
       </div>
       <div class="img-card" onclick="openLightbox(this)">
         <div class="svg-container">{svg_cmp_h5}</div>
@@ -809,7 +827,7 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
       <div class="img-card" onclick="openLightbox(this)">
         <div class="svg-container">{svg_foc_h4}</div>
         <div class="img-title">Árvore Focada (h4)</div>
-        <div class="img-desc">Azul é o caminho escolhido. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
+        <div class="img-desc">Azul é o caminho escolhido. Verde é ação de recarga. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
       </div>
       <div class="img-card" onclick="openLightbox(this)">
         <div class="svg-container">{svg_cmp_h4}</div>
@@ -827,7 +845,7 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
       <p style="margin-bottom: 24px; color: var(--text-mut);">Ela é mais adequada ao problema porque leva em conta a bateria atual do agente e o número de coletas restantes, mas continua <strong>admissível</strong> por usar apenas estimativas otimistas (distância em linha reta, tempo mínimo sem desvios).</p>
 
       <h3 style="font-size: 1.3rem; margin-bottom: 8px;">2. A Heurística Não Admissível (h4 - Inflada)</h3>
-      <p style="margin-bottom: 12px; color: var(--text-mut);">Foi considerada uma heurística não admissível, chamada de heurística inflada: <code>h4(s) = α * h5(s)</code>. Neste caso, utilizamos α = 1.5. Essa heurística pode tornar a busca mais agressiva e reduzir o número de estados expandidos, mas pode superestimar o custo real restante. Por isso, <strong>ela não garante que o A* encontre o caminho ótimo</strong>.</p>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">Foi considerada uma heurística não admissível, chamada de heurística inflada: <code>h4(s) = α * h5(s)</code>. Neste caso, utilizamos α = 5. Essa heurística pode tornar a busca mais agressiva e reduzir o número de estados expandidos, mas pode superestimar o custo real restante. Por isso, <strong>ela não garante que o A* encontre o caminho ótimo</strong>.</p>
       
       <div class="split" style="margin-top: 24px;">
         <div style="border: 1px solid var(--border); padding: 16px; border-radius: 8px;">
@@ -867,7 +885,7 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
       <h3 style="font-size: 1.3rem; margin-top: 40px; margin-bottom: 16px;">4. Possíveis Soluções e a Solução Escolhida pelo A*</h3>
       <p style="margin-bottom: 12px; color: var(--text-mut);">Durante a busca, o A* com a heurística admissível avalia várias rotas em potencial antes de cravar a melhor. A solução escolhida pelo algoritmo é sempre aquela que minimiza <strong>f(n) = g(n) + h(n)</strong>.</p>
       <div id="topic4-container" style="background: var(--bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
-        <!-- Gerado dinamicamente via JS -->
+        <!-- Preenchido dinamicamente pelo JavaScript da pagina -->
       </div>
       
       <h3 style="font-size: 1.3rem; margin-top: 40px; margin-bottom: 16px;">5. Dinâmica da Open List (Permanência de Estados)</h3>
@@ -877,7 +895,7 @@ def generate_html(graph, result_h5, result_h4, start_node, goal_node, output_fil
     </div>
   </div>
 
-  <!-- Lightbox -->
+  <!-- Janela de ampliacao das imagens -->
   <div class="lightbox" id="lightbox" onclick="closeLightbox()">
     <div class="lb-close">&times;</div>
     <div id="lb-content" style="width: 90vw; height: 90vh; display: flex; justify-content: center; align-items: center; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);"></div>
@@ -1025,7 +1043,7 @@ def _build_stats_js(result, start_node, goal_node, h_start):
         f'"treeEdges":{len(result.search_tree)}}}'
     )
 
-# ── CSS (Clean Agency Style) ──
+# CSS da pagina HTML.
 def _get_css():
     return """
 :root {

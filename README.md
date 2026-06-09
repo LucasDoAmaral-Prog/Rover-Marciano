@@ -223,7 +223,7 @@ h4(s) = alpha * h5(s)
 No projeto, o valor usado e:
 
 ```text
-alpha = 1.5
+alpha = 5
 ```
 
 | Caracteristica | Consequencia |

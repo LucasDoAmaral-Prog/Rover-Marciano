@@ -1,0 +1,145 @@
+digraph ArvoreBuscaAStar {
+	nodesep=0.38 rankdir=TB ranksep=0.65 splines=true
+	fontname=Arial fontsize=12 label="Arvore focada compactada: mostra o caminho escolhido e algumas alternativas imediatas. Ramos omitidos sao limite visual, nao poda do A*." labelloc=t
+	node [color=black fontname=Arial fontsize=10 shape=ellipse style=filled]
+	edge [color="#555555" fontname=Arial fontsize=9]
+	S1 [label="C4
+g=2,00 h=344,27 f=346,27
+b=98% coletas=1" fillcolor="#dbeafe" style=filled]
+	S2 [label="R2
+g=19,00 h=267,49 f=286,49
+b=81% coletas=1" fillcolor="#dbeafe" style=filled]
+	S1 -> S2 [label="escolhido
+17" color="#2563eb" penwidth=2]
+	S3 [label="C7
+g=46,00 h=201,19 f=247,19
+b=54% coletas=2" fillcolor="#dbeafe" style=filled]
+	S2 -> S3 [label="escolhido
+25 + coleta" color="#2563eb" penwidth=2]
+	S4 [label="C8
+g=70,00 h=130,21 f=200,21
+b=30% coletas=3" fillcolor="#dbeafe" style=filled]
+	S3 -> S4 [label="escolhido
+22 + coleta" color="#2563eb" penwidth=2]
+	S5 [label="R5
+g=88,00 h=159,55 f=247,55
+b=12% coletas=3" fillcolor="#dbeafe" style=filled]
+	S4 -> S5 [label="escolhido
+18" color="#2563eb" penwidth=2]
+	S6 [label="R5
+g=98,00 h=142,13 f=240,13
+b=62% coletas=3
+recarga" color="#059669" fillcolor="#dcfce7" style=filled]
+	S5 -> S6 [label="escolhido
+recarga 10" color="#2563eb" penwidth=2]
+	S7 [label="C8
+g=116,00 h=130,21 f=246,21
+b=44% coletas=3" fillcolor="#dbeafe" style=filled]
+	S6 -> S7 [label="escolhido
+18" color="#2563eb" penwidth=2]
+	S8 [label="C5
+g=136,00 h=74,16 f=210,16
+b=24% coletas=3" fillcolor="#dbeafe" style=filled]
+	S7 -> S8 [label="escolhido
+20" color="#2563eb" penwidth=2]
+	S9 [label="OBJETIVO
+C3
+g=159,00 h=0,00 f=159,00
+b=1% coletas=3" fillcolor="#b6f2b6" peripheries=2 style=filled]
+	S8 -> S9 [label="escolhido
+23" color="#2563eb" penwidth=2]
+	A1 [label="C10
+g=30,00 h=326,24 f=356,24
+b=70% coletas=2" fillcolor=white style=filled]
+	S1 -> A1 [label="opcao
+26 + coleta" color="#9ca3af"]
+	A2 [label="R1
+g=24,00 h=413,74 f=437,74
+b=76% coletas=1" fillcolor=white style=filled]
+	S1 -> A2 [label="opcao
+22" color="#9ca3af"]
+	A3 [label="R2
+g=19,20 h=267,49 f=286,69
+b=82% coletas=1
+recarga" color="#059669" fillcolor="#dcfce7" style=filled]
+	S2 -> A3 [label="opcao
+recarga 0,2" color="#9ca3af"]
+	A4 [label="R2
+g=19,60 h=267,49 f=287,09
+b=84% coletas=1
+recarga" color="#059669" fillcolor="#dcfce7" style=filled]
+	S2 -> A4 [label="opcao
+recarga 0,6" color="#9ca3af"]
+	A5 [label="R2
+g=19,80 h=267,49 f=287,29
+b=85% coletas=1
+recarga" color="#059669" fillcolor="#dcfce7" style=filled]
+	S2 -> A5 [label="opcao
+recarga 0,8" color="#9ca3af"]
+	P2 [label="+4 ramos omitidos
+limite visual
+(estados gerados,
+mas nao desenhados)" color="#f59e0b" fillcolor="#fef3c7" fontcolor="#92400e" shape=box style="filled,dashed"]
+	S2 -> P2 [arrowhead=none color="#d97706" style=dashed]
+	A6 [label="C6
+g=67,00 h=276,18 f=343,18
+b=33% coletas=3" fillcolor=white style=filled]
+	S3 -> A6 [label="opcao
+19 + coleta" color="#9ca3af"]
+	A7 [label="R2
+g=71,00 h=280,98 f=351,98
+b=29% coletas=2" fillcolor=white style=filled]
+	S3 -> A7 [label="opcao
+25" color="#9ca3af"]
+	A8 [label="C11
+g=73,00 h=281,61 f=354,61
+b=27% coletas=3" fillcolor=white style=filled]
+	S3 -> A8 [label="opcao
+25 + coleta" color="#9ca3af"]
+	A9 [label="C5
+g=90,00 h=80,00 f=170,00
+b=10% coletas=3" fillcolor=white style=filled]
+	S4 -> A9 [label="opcao
+20" color="#9ca3af"]
+	A10 [label="C7
+g=92,00 h=222,43 f=314,43
+b=8% coletas=3" fillcolor=white style=filled]
+	S4 -> A10 [label="opcao
+22" color="#9ca3af"]
+	S10 [label="R5
+g=94,40 h=142,13 f=236,53
+b=44% coletas=3
+recarga" color="#059669" fillcolor="#dcfce7" style="filled,dashed"]
+	S5 -> S10 [label="opcao
+recarga 6,4" color="#9ca3af"]
+	A11 [label="C12
+g=122,00 h=206,60 f=328,60
+b=38% coletas=3" fillcolor=white style=filled]
+	S6 -> A11 [label="opcao
+24" color="#9ca3af"]
+	A12 [label="C7
+g=138,00 h=208,43 f=346,43
+b=22% coletas=3" fillcolor=white style=filled]
+	S7 -> A12 [label="opcao
+22" color="#9ca3af"]
+	subgraph cluster_legend {
+		color="#cccccc" fontname=Arial fontsize=11 label=Legenda
+		node [color=black fontname=Arial fontsize=9 shape=box style=filled]
+		legend_solution [label="Estado no caminho escolhido
+arestas azuis ligam a rota final" fillcolor="#dbeafe"]
+		legend_recharge [label="Acao de recarga executada
+recarga tambem entra em g(s)" color="#059669" fillcolor="#dcfce7"]
+		legend_goal [label="Destino / objetivo" fillcolor="#b6f2b6" peripheries=2]
+		legend_expanded [label="Expandido / Closed
+(filhos nao desenhados nesta visao)" fillcolor="#e5e7eb"]
+		legend_open [label="Gerado / Open
+candidato ainda nao expandido" fillcolor=white]
+		legend_alternative [label="Alternativa desenhada
+aresta cinza" fillcolor=white]
+		legend_pruned [label="Ramos omitidos por limite visual:
+estados gerados na execucao,
+mas ocultados para evitar arvore ilegivel.
+Nao e poda do algoritmo;
+Open/Closed e metricas reais nao mudam." fillcolor="#fef3c7"]
+	}
+}

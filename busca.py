@@ -13,27 +13,34 @@ from estado import State
 from heuristica import h5
 
 
+# heapq cria a fila de prioridade do A*: o estado com menor f(n) sai primeiro.
+# math e usado para arredondar para cima a bateria minima necessaria.
+# dataclass reduz codigo repetitivo em estruturas que so guardam dados.
+
+
 @dataclass
 class TreeEdge:
-    """Represents one edge in the search tree: a parent expanding into a child."""
-    parent_state: object  # State or None for root
-    child_state: object   # State
+    """Guarda uma transicao da arvore de busca."""
+    parent_state: object
+    child_state: object
     action: str
     g: float
     h: float
     f: float
-    in_solution: bool = False  # will be set to True for edges on the optimal path
+    in_solution: bool = False
 
 
 @dataclass
 class SearchResult:
+    """Resultado completo da busca, incluindo dados usados no relatorio."""
+
     path: list
     total_time: float
     expanded_states: int
     open_list_size: int
     closed_list_size: int
     success: bool
-    search_tree: list = field(default_factory=list)   # list of TreeEdge
+    search_tree: list = field(default_factory=list)
     final_state: object = None
     open_list_history: list = field(default_factory=list)
     closed_list_history: list = field(default_factory=list)
@@ -46,14 +53,28 @@ class AStarSearch:
         self.graph = graph
 
     def search(self, start_node, goal_node, heuristic_func=h5):
+        """Executa o A* entre a origem e o objetivo.
+
+        Cada estado guarda onde o rover esta, quanta bateria sobrou e quais
+        coletas ja foram feitas. O A* sempre escolhe para expandir o estado com
+        menor f(n), em que f(n) = g(n) + h(n).
+        """
         self._validate_nodes(start_node, goal_node)
 
         start_state = self._create_initial_state(start_node)
 
         initial_g = float(COLLECTION_TIME) if self.graph.is_collection_node(start_node) else 0.0
 
+        # Lista aberta: estados descobertos, mas ainda nao expandidos.
+        # Cada item fica como (f, contador, estado); o contador desempata sem
+        # obrigar o Python a comparar dois objetos State.
         open_list = []
+
+        # Lista fechada: estados que ja tiveram seus vizinhos analisados.
         closed_list = set()
+
+        # g_score guarda o custo real mais barato conhecido ate cada estado.
+        # parents guarda de onde cada estado veio para reconstruir a rota final.
         g_score = {start_state: initial_g}
         parents = {start_state: (None, "inicio")}
 
@@ -67,7 +88,7 @@ class AStarSearch:
         first_f = initial_g + h_start
         heapq.heappush(open_list, (first_f, counter, start_state))
 
-        # Record the root as a special edge (parent=None)
+        # A raiz tambem entra na arvore para aparecer na imagem com g, h e f.
         search_tree.append(TreeEdge(
             parent_state=None,
             child_state=start_state,
@@ -77,7 +98,8 @@ class AStarSearch:
             f=first_f,
         ))
 
-        # Para rastrear saltos temporais na lista aberta (Tópico 5)
+        # Estes dados mostram quando um estado foi gerado cedo, mas so foi
+        # expandido bem depois. Isso ajuda a explicar a ordem da lista aberta.
         added_at_step = {start_state: 0}
         expanded_later = []
         step = 0
@@ -94,7 +116,6 @@ class AStarSearch:
 
             step += 1
             
-            # Se o nó entrou na open_list num passo bem anterior ao passo atual (com atraso > 1)
             if added_at_step[current_state] < step - 1:
                 expanded_later.append({
                     'state': current_state,
@@ -106,7 +127,8 @@ class AStarSearch:
             if self._is_goal_state(current_state, goal_node):
                 path = self._reconstruct_path(current_state, parents, g_score)
 
-                # Mark only the parent-child transitions used by the final path.
+                # Marcamos apenas as transicoes do caminho final. A arvore ainda
+                # guarda os outros estados, mas a visualizacao destaca a solucao.
                 solution_states = {step_dict["state"] for step_dict in path}
                 solution_edges = set()
                 for i in range(1, len(path)):
@@ -139,6 +161,8 @@ class AStarSearch:
 
             closed_list.add(current_state)
 
+            # Evita duas recargas seguidas no mesmo lugar. Depois de recarregar,
+            # o rover precisa se mover antes de considerar outra recarga.
             previous_action = parents[current_state][1]
             allow_recharge = "recarregar" not in previous_action
 
@@ -159,7 +183,8 @@ class AStarSearch:
                     if self._is_dominated(next_state, new_g, g_score):
                         continue
 
-                    # Capturar nó revisitado na open list (ignorando diferenças microscópicas de float)
+                    # Se o mesmo estado ja estava na lista aberta com custo
+                    # maior, guardamos a troca para mostrar no relatorio.
                     if next_state in g_score and next_state not in closed_list:
                         if g_score[next_state] - new_g > 0.01:
                             revisited_states.append({
@@ -185,7 +210,8 @@ class AStarSearch:
                     counter += 1
                     heapq.heappush(open_list, (new_f, counter, next_state))
                     
-            # Registrar snapshots no final da expansão do nó
+            # O historico e registrado no fim da expansao para refletir a lista
+            # aberta e fechada depois daquela decisao.
             open_list_history.append(
                 self._format_state_list(open_list, closed_list, g_score, heuristic_func, goal_node)
             )
@@ -208,6 +234,8 @@ class AStarSearch:
         )
 
     def _validate_nodes(self, start_node, goal_node):
+        """Confere se origem e destino existem no grafo."""
+
         if not self.graph.has_node(start_node):
             raise ValueError(f"Origem invalida: {start_node}")
 
@@ -215,11 +243,13 @@ class AStarSearch:
             raise ValueError(f"Destino invalido: {goal_node}")
 
     def _create_initial_state(self, start_node):
+        """Monta o estado inicial, incluindo coleta automatica se a origem for C."""
+
         collected_points = set()
         initial_battery = MAX_BATTERY
 
-        # Conforme a especificacao, se o rover inicia em um ponto de coleta,
-        # esse ponto ja entra no conjunto de coletas realizadas e consome bateria.
+        # Se o rover ja comeca em um ponto de coleta, essa amostra conta para a
+        # missao e tambem consome o tempo/bateria da coleta.
         if self.graph.is_collection_node(start_node):
             collected_points.add(start_node)
             initial_battery -= COLLECTION_TIME
@@ -231,6 +261,8 @@ class AStarSearch:
         )
 
     def _is_goal_state(self, state, goal_node):
+        """O objetivo so vale quando destino, bateria minima e coletas batem."""
+
         return (
             state.current_node == goal_node
             and state.battery_level >= MIN_BATTERY
@@ -238,13 +270,12 @@ class AStarSearch:
         )
 
     def _generate_successors(self, state, goal_node, allow_recharge=True):
+        """Cria todos os proximos estados possiveis a partir do estado atual."""
+
         successors = []
 
-        # Acao 1: recarregar.
-        # Gera estados explicitos de recarga parcial com custo real.
-        # Em vez de tentar todos os percentuais ate 100, usa apenas niveis
-        # de bateria que permitem alcancar algum ponto relevante antes da
-        # proxima recarga. Isso preserva a recarga parcial e reduz a explosao.
+        # Primeiro vem a acao de recarregar. Ela so aparece em nos R e so usa
+        # niveis de bateria que podem ser uteis para chegar a outro ponto.
         if (
             allow_recharge
             and self.graph.is_recharge_node(state.current_node)
@@ -268,9 +299,8 @@ class AStarSearch:
                 )
                 successors.append((next_state, recharge_time, action))
 
-        # Acao 2: mover para um vizinho conectado por aresta.
-        # O peso da aresta e tempo real de deslocamento em minutos.
-        # Como o consumo e 1% por minuto, o mesmo valor e subtraido da bateria.
+        # Depois vem o deslocamento pelas arestas do grafo. O tempo da aresta
+        # tambem e o consumo de bateria, pois o modelo usa 1% por minuto.
         for neighbor, travel_time in self.graph.get_neighbors(state.current_node):
             battery_after_move = state.battery_level - travel_time
 
@@ -282,9 +312,8 @@ class AStarSearch:
             battery_after_action = battery_after_move
             action = f"mover {state.current_node} -> {neighbor}"
 
-            # Coleta automatica ao chegar em um ponto C ainda nao visitado,
-            # mas somente enquanto o rover nao atingiu o minimo de coletas.
-            # Depois de 5 coletas, novas coletas sao opcionais e nao custam tempo.
+            # A coleta e automatica enquanto a missao ainda nao atingiu o minimo.
+            # Depois disso, passar por outro ponto C nao aumenta o custo.
             can_collect = (
                 self.graph.is_collection_node(neighbor)
                 and neighbor not in new_collected_points
@@ -312,6 +341,14 @@ class AStarSearch:
         return successors
 
     def _useful_recharge_targets(self, state, goal_node):
+        """Calcula quais niveis de recarga realmente valem a pena considerar.
+
+        Testar todos os percentuais ate 100 deixaria a busca muito grande.
+        Entao a funcao olha adiante a partir da estacao atual e guarda apenas
+        baterias que permitem chegar a algum ponto relevante: outra estacao ou
+        o objetivo com a quantidade minima de coletas.
+        """
+
         targets = set()
         best_goal_target = None
         start_key = (state.current_node, state.collected_points)
@@ -351,8 +388,8 @@ class AStarSearch:
                         best_goal_target = target_battery
                     continue
 
-                # Ao chegar em outra estacao, o A* pode decidir recarregar la.
-                # Continuar alem dela so recriaria opcoes equivalentes.
+                # Ao chegar em outra estacao, paramos a olhada adiante: dali o
+                # proprio A* pode decidir se recarrega de novo ou segue caminho.
                 if self.graph.is_recharge_node(neighbor):
                     if neighbor != state.current_node and target_battery > state.battery_level:
                         targets.add(target_battery)
@@ -367,12 +404,20 @@ class AStarSearch:
             if best_goal_target <= state.battery_level:
                 return []
 
+            # Se ja existe uma recarga suficiente para fechar a missao direto,
+            # alvos maiores so gastariam mais tempo sem trazer ganho.
             targets = {target for target in targets if target < best_goal_target}
             targets.add(best_goal_target)
 
         return sorted(targets)
 
     def _is_dominated(self, state, g_value, g_score):
+        """Descarta estados claramente piores que outro ja conhecido.
+
+        Se dois estados estao no mesmo no e possuem as mesmas coletas, aquele
+        com menos bateria e custo maior nunca sera melhor no futuro.
+        """
+
         for other_state, other_g in g_score.items():
             if other_state == state:
                 continue
@@ -392,6 +437,8 @@ class AStarSearch:
         return False
 
     def _active_open_states(self, open_list, closed_list, g_score):
+        """Filtra a lista aberta para mostrar apenas candidatos ainda validos."""
+
         states = []
         seen = set()
 
@@ -407,6 +454,8 @@ class AStarSearch:
         return states
 
     def _reconstruct_path(self, final_state, parents, g_score):
+        """Volta dos pais ate a raiz e depois inverte para obter a rota final."""
+
         path = []
         current_state = final_state
 
@@ -423,6 +472,8 @@ class AStarSearch:
         return path
 
     def _format_state_list(self, states_source, closed_list, g_score, heuristic_func, goal_node):
+        """Formata estados para o historico exibido no relatorio HTML."""
+
         if isinstance(states_source, list):
             states = self._active_open_states(states_source, closed_list, g_score)
         else:

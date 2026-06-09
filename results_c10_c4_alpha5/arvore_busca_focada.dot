@@ -1,0 +1,80 @@
+digraph ArvoreBuscaAStar {
+	nodesep=0.38 rankdir=TB ranksep=0.65 splines=true
+	fontname=Arial fontsize=12 label="Arvore focada compactada: mostra o caminho escolhido e algumas alternativas imediatas. Ramos omitidos sao limite visual, nao poda do A*." labelloc=t
+	node [color=black fontname=Arial fontsize=10 shape=ellipse style=filled]
+	edge [color="#555555" fontname=Arial fontsize=9]
+	S1 [label="C10
+g=2,00 h=98,26 f=100,26
+b=98% coletas=1" fillcolor="#dbeafe" style=filled]
+	S2 [label="R6
+g=16,00 h=101,63 f=117,63
+b=84% coletas=1" fillcolor="#dbeafe" style=filled]
+	S1 -> S2 [label="escolhido
+14" color="#2563eb" penwidth=2]
+	S3 [label="C6
+g=31,00 h=80,00 f=111,00
+b=69% coletas=2" fillcolor="#dbeafe" style=filled]
+	S2 -> S3 [label="escolhido
+13 + coleta" color="#2563eb" penwidth=2]
+	S4 [label="R2
+g=49,00 h=91,63 f=140,63
+b=51% coletas=2" fillcolor="#dbeafe" style=filled]
+	S3 -> S4 [label="escolhido
+18" color="#2563eb" penwidth=2]
+	S5 [label="OBJETIVO
+C4
+g=68,00 h=0,00 f=68,00
+b=32% coletas=3" fillcolor="#b6f2b6" peripheries=2 style=filled]
+	S4 -> S5 [label="escolhido
+17 + coleta" color="#2563eb" penwidth=2]
+	S6 [label="C4
+g=30,00 h=10,00 f=40,00
+b=70% coletas=2" fillcolor="#e5e7eb" style="filled,dashed"]
+	S1 -> S6 [label="opcao
+26 + coleta" color="#9ca3af"]
+	A1 [label="C9
+g=35,00 h=108,99 f=143,99
+b=65% coletas=2" fillcolor=white style=filled]
+	S1 -> A1 [label="opcao
+31 + coleta" color="#9ca3af"]
+	A2 [label="C11
+g=24,00 h=136,19 f=160,19
+b=76% coletas=2" fillcolor=white style=filled]
+	S1 -> A2 [label="opcao
+20 + coleta" color="#9ca3af"]
+	P1 [label="+1 ramos omitidos
+limite visual
+(estados gerados,
+mas nao desenhados)" color="#f59e0b" fillcolor="#fef3c7" fontcolor="#92400e" shape=box style="filled,dashed"]
+	S1 -> P1 [arrowhead=none color="#d97706" style=dashed]
+	S7 [label="R6
+g=44,00 h=91,63 f=135,63
+b=56% coletas=2" fillcolor="#e5e7eb" style="filled,dashed"]
+	S3 -> S7 [label="opcao
+13" color="#9ca3af"]
+	A3 [label="C7
+g=52,00 h=140,00 f=192,00
+b=48% coletas=3" fillcolor=white style=filled]
+	S3 -> A3 [label="opcao
+19 + coleta" color="#9ca3af"]
+	subgraph cluster_legend {
+		color="#cccccc" fontname=Arial fontsize=11 label=Legenda
+		node [color=black fontname=Arial fontsize=9 shape=box style=filled]
+		legend_solution [label="Estado no caminho escolhido
+arestas azuis ligam a rota final" fillcolor="#dbeafe"]
+		legend_recharge [label="Acao de recarga executada
+recarga tambem entra em g(s)" color="#059669" fillcolor="#dcfce7"]
+		legend_goal [label="Destino / objetivo" fillcolor="#b6f2b6" peripheries=2]
+		legend_expanded [label="Expandido / Closed
+(filhos nao desenhados nesta visao)" fillcolor="#e5e7eb"]
+		legend_open [label="Gerado / Open
+candidato ainda nao expandido" fillcolor=white]
+		legend_alternative [label="Alternativa desenhada
+aresta cinza" fillcolor=white]
+		legend_pruned [label="Ramos omitidos por limite visual:
+estados gerados na execucao,
+mas ocultados para evitar arvore ilegivel.
+Nao e poda do algoritmo;
+Open/Closed e metricas reais nao mudam." fillcolor="#fef3c7"]
+	}
+}

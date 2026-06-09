@@ -10,7 +10,13 @@ from config import (
 )
 
 
+# math.sqrt calcula a distancia em linha reta entre dois pontos do mapa.
+# As constantes de config deixam a heuristica ligada aos mesmos parametros da missao.
+
+
 def euclidean_distance_on_plane(graph, node_a, node_b):
+    """Distancia em linha reta usando as coordenadas desenhadas no grafo."""
+
     x_a, y_a = graph.positions[node_a]
     x_b, y_b = graph.positions[node_b]
 
@@ -18,6 +24,8 @@ def euclidean_distance_on_plane(graph, node_a, node_b):
 
 
 def distance_in_km(graph, node_a, node_b):
+    """Converte a distancia do plano para quilometros."""
+
     plane_distance = euclidean_distance_on_plane(graph, node_a, node_b)
     return PLANE_UNIT_IN_KM * plane_distance
 
@@ -30,6 +38,8 @@ def min_displacement_time(graph, state, goal_node):
 
 
 def remaining_collections(state):
+    """Quantidade de coletas que ainda faltam para cumprir a missao."""
+
     return max(0, MIN_COLLECTIONS - len(state.collected_points))
 
 
@@ -55,13 +65,17 @@ def min_recharge_time(graph, state, goal_node):
 
 
 def h5(graph, state, goal_node):
+    """Heuristica admissivel: soma apenas limites inferiores do custo restante."""
+
     return (
         min_displacement_time(graph, state, goal_node)
         + min_collection_time(state)
         + min_recharge_time(graph, state, goal_node)
     )
 
-def h4(graph, state, goal_node, alpha=1.5):
+def h4(graph, state, goal_node, alpha=5):
+    """Heuristica inflada: mais agressiva, mas sem garantia de otimalidade."""
+
     if alpha <= 1:
         raise ValueError("alpha deve ser maior que 1.")
     return alpha * h5(graph, state, goal_node)

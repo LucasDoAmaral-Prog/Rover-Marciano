@@ -18,6 +18,11 @@ from visualizacao import (
 )
 
 
+# argparse le os parametros passados no terminal, como --start e --goal.
+# os ajuda a criar a pasta de resultados antes de salvar HTML e imagens.
+# partial fixa o alpha da h4 sem precisar criar uma funcao nova so para isso.
+
+
 def build_parser():
     parser = argparse.ArgumentParser(
         description="Busca A* para navegacao autonoma de um rover marciano."
@@ -151,7 +156,7 @@ def main():
     )
     
     print("=== EXECUTANDO COM HEURISTICA INFLADA NAO ADMISSIVEL (h4) ===")
-    h4_func = partial(h4, alpha=1.5)
+    h4_func = partial(h4, alpha=5)
     result_h4 = search.search(start_node, goal_node, heuristic_func=h4_func)
     print_result(
         result_h4,
@@ -165,7 +170,7 @@ def main():
     # Gerar a arvore com o result_h5 para manter compatibilidade com o log no terminal
     print_tree_section(result_h5, max_depth=args.tree_depth)
 
-    # Generate both tree visualizations using h5
+    # Gera as imagens da arvore usando o resultado da h5.
     img_focada = generate_focused_tree_image(
         graph, result_h5, start_node, goal_node, output_dir=args.output_dir,
     )

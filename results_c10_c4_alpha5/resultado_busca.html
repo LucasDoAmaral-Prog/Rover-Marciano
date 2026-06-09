@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório A* - Rover Marciano</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fafafa; --surface: #ffffff; --border: #eaeaea;
+  --text-main: #111111; --text-mut: #666666;
+  --accent: #111111; --path: #2563eb; --node-c: #ea580c; --node-r: #059669;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); line-height: 1.5; padding: 40px 20px; }
+.app-container { max-width: 1200px; margin: 0 auto; }
+.header { text-align: center; margin-bottom: 60px; padding-bottom: 40px; border-bottom: 1px solid var(--border); }
+.header h1 { font-size: 3.5rem; font-weight: 800; letter-spacing: 0; margin-bottom: 16px; color: var(--text-main); }
+.header p { font-size: 1.2rem; color: var(--text-mut); max-width: 600px; margin: 0 auto; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; margin-bottom: 60px; text-align: center; }
+.stat-item .value { font-size: 4rem; font-weight: 800; letter-spacing: 0; margin-bottom: 8px; color: var(--text-main); }
+.stat-item .label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-mut); font-weight: 600; }
+.section-title { font-size: 1.8rem; font-weight: 800; letter-spacing: 0; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
+.table-panel { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.heuristic-table { width: 100%; min-width: 1080px; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
+.heuristic-table th, .heuristic-table td { white-space: nowrap; vertical-align: top; }
+.heuristic-table td:nth-child(3) { white-space: normal; min-width: 210px; }
+.formula-note { margin-top: 16px; margin-bottom: 0; color: var(--text-mut); }
+.metric-note { border-left: 4px solid var(--path); background: #eff6ff; color: #1e3a8a; padding: 18px 22px; }
+.visual-note { border-left: 4px solid #f59e0b; background: #fffbeb; color: #78350f; padding: 18px 22px; }
+.map-legend { display: flex; gap: 20px; margin-bottom: 20px; font-size: 0.9rem; color: var(--text-mut); }
+.l-item { display: flex; align-items: center; gap: 8px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.bg-c { background: var(--node-c); } .bg-r { background: var(--node-r); } 
+.line { width: 20px; height: 3px; border-radius: 2px; } .bg-p { background: var(--path); }
+#mapCanvas { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+@media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
+.log-area { max-height: 500px; overflow-y: auto; padding-right: 16px; }
+.log-area::-webkit-scrollbar { width: 6px; } .log-area::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+.path-step { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.path-step:last-child { border-bottom: none; }
+.p-node { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+.p-act { color: var(--text-mut); font-size: 0.95rem; margin-bottom: 8px; }
+.p-metrics { display: flex; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-main); }
+.tree-node { margin-left: 24px; position: relative; border-left: 1px solid #ddd; padding-left: 16px; margin-top: 8px; }
+.tree-item { display: inline-flex; align-items: center; flex-wrap: wrap; max-width: 100%; gap: 12px; padding: 8px 12px; cursor: pointer; border-radius: 6px; background: #f9f9f9; transition: background 0.2s; border: 1px solid transparent; }
+.tree-item:hover { background: #f1f1f1; }
+.tree-item.is-sol { background: #eff6ff; border-color: #bfdbfe; }
+.tree-toggle { width: 16px; font-weight: bold; color: var(--text-mut); text-align: center; }
+.t-node { font-weight: 700; font-size: 1rem; }
+.t-data { color: var(--text-mut); font-size: 0.85rem; font-family: 'JetBrains Mono', monospace; overflow-wrap: anywhere; }
+.tree-kids { display: none; } .tree-kids.open { display: block; }
+.btn { background: var(--accent); color: #fff; border: none; padding: 10px 20px; font-size: 0.9rem; font-weight: 600; border-radius: 6px; cursor: pointer; transition: opacity 0.2s; }
+.btn:hover { opacity: 0.8; }
+.images-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+@media (max-width: 800px) { .images-grid { grid-template-columns: 1fr; } }
+.img-card { cursor: zoom-in; transition: transform 0.2s; background: var(--surface); border: 1px solid var(--border); padding: 16px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
+.img-card:hover { transform: translateY(-4px); }
+.img-card img { width: 100%; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: #fff; }
+.img-title { font-size: 1.2rem; font-weight: 700; margin-top: 16px; margin-bottom: 8px; }
+.img-desc { color: var(--text-mut); font-size: 0.95rem; }
+/* Lightbox */
+.lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; padding: 40px; }
+.lightbox.active { opacity: 1; pointer-events: auto; }
+.lightbox img { max-width: 100%; max-height: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border-radius: 8px; }
+.lb-close { position: absolute; top: 30px; right: 40px; font-size: 2.5rem; cursor: pointer; font-weight: 300; color: #000; }
+@media (max-width: 700px) {
+  body { padding: 20px 12px; }
+  .header { margin-bottom: 32px; padding-bottom: 24px; }
+  .header h1 { font-size: 2rem; }
+  .header p { font-size: 1rem; }
+  .stats-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; margin-bottom: 36px; }
+  .stat-item .value { font-size: 2.4rem; }
+  .section-title { font-size: 1.35rem; margin-bottom: 16px; padding-bottom: 12px; }
+  .panel { padding: 16px; margin-bottom: 28px; border-radius: 8px; }
+  .table-panel { margin-left: -12px; margin-right: -12px; border-left: 0; border-right: 0; border-radius: 0; }
+  .heuristic-table { min-width: 1080px; font-size: 0.82rem; }
+  .map-legend { flex-wrap: wrap; gap: 12px; }
+  .p-metrics { flex-wrap: wrap; gap: 8px; }
+  .tree-node { margin-left: 12px; padding-left: 10px; }
+  .tree-item { max-width: 100%; overflow-x: auto; flex-wrap: wrap; }
+  .images-grid { gap: 20px; }
+  .img-card { border-radius: 8px; padding: 12px; }
+  .lightbox { padding: 16px; }
+  .lb-close { top: 14px; right: 18px; }
+}
+</style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <h1>Navegação A* - Solução Ótima (h5)</h1>
+      <p>Análise de rota autônoma do Rover Marciano utilizando heurística admissível e otimização de bateria.</p>
+    </header>
+
+    <div style="background: rgba(5, 150, 105, 0.1); border-left: 4px solid var(--node-r); padding: 16px; margin-bottom: 24px; border-radius: 4px; color: var(--node-r); font-size: 1.05rem;">
+      <strong>Missão Bem-Sucedida:</strong> O rover chegou ao estado objetivo corretamente nesta execução. Os dados abaixo representam a rota ótima garantida pela heurística admissível (h5).
+    </div>
+
+    <div class="stats-grid" id="stats-row"></div>
+    <div class="panel metric-note">
+      <strong>Leitura das métricas:</strong> estados expandidos são contados pela Closed List real da execução. O tamanho da Open List representa os estados ativos ainda disponíveis para expansão ao final da busca. Estados gerados correspondem aos estados aceitos na estrutura de execução, incluindo a raiz. A árvore Graphviz pode ocultar ramos por limite visual, mas essa compactação não altera Open, Closed nem as contagens do algoritmo.
+    </div>
+
+    <div class="section-title">Visualização do Terreno</div>
+    <div class="panel">
+      <div class="map-legend">
+        <div class="l-item"><div class="dot bg-c"></div> Ponto de Coleta</div>
+        <div class="l-item"><div class="dot bg-r"></div> Estação de Recarga</div>
+        <div class="l-item"><div class="line bg-p"></div> Caminho Ótimo</div>
+      </div>
+      <canvas id="mapCanvas"></canvas>
+    </div>
+
+    <div class="split">
+      <div>
+        <div class="section-title">Trajetória (Log)</div>
+        <div class="panel log-area" id="path-container"></div>
+      </div>
+      <div>
+        <div class="section-title" style="display:flex; justify-content:space-between;">
+          Hierarquia
+          <button class="btn" id="btn-expand-all">Expandir Tudo</button>
+        </div>
+        <div class="panel log-area" id="tree-container"></div>
+      </div>
+    </div>
+
+    <div class="section-title">Detalhamento da Heurística (h5) por Passo</div>
+    <div class="panel table-panel">
+      <p style="margin-bottom: 12px; color: var(--text-mut);">A tabela abaixo apresenta como a heurística admissível <strong>h5</strong> estimou o custo restante em cada passo da trajetória apresentada. A soma dos componentes (deslocamento, coleta e recarga mínimos) resulta no valor final de <code>h5(s)</code>.</p>
+      <table class="heuristic-table">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border);">
+            <th style="padding: 12px 8px;">Etapa</th>
+            <th style="padding: 12px 8px;">Estado (p,b,K)</th>
+            <th style="padding: 12px 8px;">Ação</th>
+            <th style="padding: 12px 8px;">g(s)</th>
+            <th style="padding: 12px 8px;">r(s)</th>
+            <th style="padding: 12px 8px;">Tdesloc_min(s)</th>
+            <th style="padding: 12px 8px;">Tcoleta_min(s)</th>
+            <th style="padding: 12px 8px;">Trecarga_min(s)</th>
+            <th style="padding: 12px 8px; color: var(--node-r);">h5(s)</th>
+            <th style="padding: 12px 8px; color: var(--node-c);">f(s)</th>
+          </tr>
+        </thead>
+        <tbody id="heuristic-tbody">
+        </tbody>
+      </table>
+      <p class="formula-note">Na tabela, <code>s = (p,b,K)</code>: <code>p</code> é a posição atual, <code>b</code> é a bateria e <code>K</code> é o conjunto de coletas realizadas. O valor <code>g(s)</code> é o custo real acumulado até o estado, considerando deslocamentos, coletas e recargas reais já executadas. O valor <code>r(s)</code> é o número de coletas restantes para cumprir a missão: <code>r(s) = max(0, m - |K|)</code>, com <code>m = 3</code>.</p>
+      <p class="formula-note">Os termos da heurística são calculados explicitamente assim: <code>Tdesloc_min(s) = d_km(p,G) / v_max</code>, em que <code>d_km(p,G) = dist_euclidiana(p,G) × 0.7</code>. De forma expandida, <code>Tdesloc_min(s) = sqrt((x_G - x_p)^2 + (y_G - y_p)^2) × 0.7 / 0.1</code>. O termo de coleta é <code>Tcoleta_min(s) = 2 × r(s)</code>, porque cada coleta custa 2 minutos. O termo de recarga é <code>Trecarga_min(s) = max(0, Tdesloc_min(s) + Tcoleta_min(s) + 1 - b) / 5</code>, que estima a recarga mínima necessária para não chegar ao objetivo com bateria nula. Assim, <code>h5(s) = Tdesloc_min(s) + Tcoleta_min(s) + Trecarga_min(s)</code> e <code>f(s) = g(s) + h5(s)</code>. O termo <code>Trecarga_min(s)</code> faz parte da heurística, enquanto a recarga real executada no caminho entra em <code>g(s)</code>.</p>
+    </div>
+
+    <div class="section-title">Detalhamento da Heurística (h4) por Passo</div>
+    <div class="panel table-panel">
+      <p style="margin-bottom: 12px; color: var(--text-mut);">A tabela abaixo usa os mesmos estados e os mesmos termos mínimos da tabela h5. A diferença é que a heurística inflada calcula <code>h4(s) = α × h5(s)</code>, com <code>α = 5</code>, e depois calcula <code>f(s) = g(s) + h4(s)</code>.</p>
+      <table class="heuristic-table">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border);">
+            <th style="padding: 12px 8px;">Etapa</th>
+            <th style="padding: 12px 8px;">Estado (p,b,K)</th>
+            <th style="padding: 12px 8px;">Ação</th>
+            <th style="padding: 12px 8px;">g(s)</th>
+            <th style="padding: 12px 8px;">r(s)</th>
+            <th style="padding: 12px 8px;">Tdesloc_min(s)</th>
+            <th style="padding: 12px 8px;">Tcoleta_min(s)</th>
+            <th style="padding: 12px 8px;">Trecarga_min(s)</th>
+            <th style="padding: 12px 8px; color: var(--node-r);">h4(s)</th>
+            <th style="padding: 12px 8px; color: var(--node-c);">f(s)</th>
+          </tr>
+        </thead>
+        <tbody id="heuristic-h4-tbody">
+        </tbody>
+      </table>
+      <p class="formula-note">Para comparação, <code>Tdesloc_min(s)</code>, <code>Tcoleta_min(s)</code>, <code>Trecarga_min(s)</code>, <code>r(s)</code> e <code>g(s)</code> permanecem iguais. Apenas o valor da estimativa muda: <code>h4(s) = 5 × h5(s)</code>. Por isso, a h4 pode ficar mais agressiva, mas deixa de ser admissível porque pode superestimar o custo restante.</p>
+    </div>
+
+    <div class="section-title">Árvores de Busca Geradas</div>
+    <div class="panel visual-note">
+      <strong>Como ler as árvores compactadas:</strong> os ramos omitidos por limite visual representam estados que foram gerados durante a execução do A*, mas não foram desenhados para evitar uma figura excessivamente grande e difícil de ler. Isso não é poda do algoritmo: a execução, as listas Open/Closed e as métricas reais continuam considerando os estados normalmente. Sem esse limite visual, a imagem precisaria desenhar todos os sucessores e sub-ramos gerados pela busca.
+    </div>
+    
+    <h3 style="font-size: 1.1rem; margin-bottom: 12px; color: var(--path);">Heurística Admissível (h5)</h3>
+    <div class="images-grid" style="margin-bottom: 24px;">
+      <div class="img-card" onclick="openLightbox(this)">
+        <div class="svg-container"><svg width="100%" height="100%" data-w="1974pt" data-h="679pt"
+ viewBox="0.00 0.00 1974.00 679.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 674.98)">
+<title>ArvoreBuscaAStar</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-674.98 1970.03,-674.98 1970.03,4 -4,4"/>
+<text xml:space="preserve" text-anchor="middle" x="983.01" y="-655.58" font-family="Arial" font-size="12.00">Arvore focada compactada: mostra o caminho escolhido e algumas alternativas imediatas. Ramos omitidos sao limite visual, nao poda do A*.</text>
+<g id="clust1" class="cluster">
+<title>cluster_legend</title>
+<polygon fill="none" stroke="#cccccc" points="799.03,-542.73 799.03,-640.73 1958.03,-640.73 1958.03,-542.73 799.03,-542.73"/>
+<text xml:space="preserve" text-anchor="middle" x="1378.53" y="-626.28" font-family="Arial" font-size="11.00">Legenda</text>
+</g>
+<!-- S1 -->
+<g id="node1" class="node">
+<title>S1</title>
+<ellipse fill="#dbeafe" stroke="black" cx="695.03" cy="-580.98" rx="85.03" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-589.48" font-family="Arial" font-size="10.00">C10</text>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-577.48" font-family="Arial" font-size="10.00">g=2,00 h=19,65 f=21,65</text>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-565.48" font-family="Arial" font-size="10.00">b=98% coletas=1</text>
+</g>
+<!-- S2 -->
+<g id="node2" class="node">
+<title>S2</title>
+<ellipse fill="#dbeafe" stroke="black" cx="293.03" cy="-449.76" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="293.03" y="-458.26" font-family="Arial" font-size="10.00">R6</text>
+<text xml:space="preserve" text-anchor="middle" x="293.03" y="-446.26" font-family="Arial" font-size="10.00">g=16,00 h=20,33 f=36,33</text>
+<text xml:space="preserve" text-anchor="middle" x="293.03" y="-434.26" font-family="Arial" font-size="10.00">b=84% coletas=1</text>
+</g>
+<!-- S1&#45;&gt;S2 -->
+<g id="edge1" class="edge">
+<title>S1&#45;&gt;S2</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M632.22,-559.79C561.31,-537 445.92,-499.91 369.74,-475.42"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="370.87,-472.1 360.28,-472.38 368.73,-478.77 370.87,-472.1"/>
+<text xml:space="preserve" text-anchor="middle" x="537.97" y="-517.32" font-family="Arial" font-size="9.00">escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="537.97" y="-506.82" font-family="Arial" font-size="9.00">14</text>
+</g>
+<!-- S6 -->
+<g id="node6" class="node">
+<title>S6</title>
+<ellipse fill="#e5e7eb" stroke="black" stroke-dasharray="5,2" cx="494.03" cy="-449.76" rx="85.03" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="494.03" y="-458.26" font-family="Arial" font-size="10.00">C4</text>
+<text xml:space="preserve" text-anchor="middle" x="494.03" y="-446.26" font-family="Arial" font-size="10.00">g=30,00 h=2,00 f=32,00</text>
+<text xml:space="preserve" text-anchor="middle" x="494.03" y="-434.26" font-family="Arial" font-size="10.00">b=70% coletas=2</text>
+</g>
+<!-- S1&#45;&gt;S6 -->
+<g id="edge5" class="edge">
+<title>S1&#45;&gt;S6</title>
+<path fill="none" stroke="#9ca3af" d="M653.87,-553.52C622.4,-533.29 578.85,-505.29 545.15,-483.63"/>
+<polygon fill="#9ca3af" stroke="#9ca3af" points="547.06,-480.69 536.75,-478.23 543.27,-486.58 547.06,-480.69"/>
+<text xml:space="preserve" text-anchor="middle" x="629.06" y="-517.32" font-family="Arial" font-size="9.00">opcao</text>
+<text xml:space="preserve" text-anchor="middle" x="629.06" y="-506.82" font-family="Arial" font-size="9.00">26 + coleta</text>
+</g>
+<!-- S7 -->
+<g id="node7" class="node">
+<title>S7</title>
+<ellipse fill="#e5e7eb" stroke="black" stroke-dasharray="5,2" cx="695.03" cy="-449.76" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-458.26" font-family="Arial" font-size="10.00">C11</text>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-446.26" font-family="Arial" font-size="10.00">g=24,00 h=27,24 f=51,24</text>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-434.26" font-family="Arial" font-size="10.00">b=76% coletas=2</text>
+</g>
+<!-- S1&#45;&gt;S7 -->
+<g id="edge6" class="edge">
+<title>S1&#45;&gt;S7</title>
+<path fill="none" stroke="#9ca3af" d="M695.03,-549.69C695.03,-532.72 695.03,-511.3 695.03,-492.73"/>
+<polygon fill="#9ca3af" stroke="#9ca3af" points="698.53,-492.83 695.03,-482.83 691.53,-492.83 698.53,-492.83"/>
+<text xml:space="preserve" text-anchor="middle" x="717.53" y="-517.32" font-family="Arial" font-size="9.00">opcao</text>
+<text xml:space="preserve" text-anchor="middle" x="717.53" y="-506.82" font-family="Arial" font-size="9.00">20 + coleta</text>
+</g>
+<!-- S8 -->
+<g id="node8" class="node">
+<title>S8</title>
+<ellipse fill="#e5e7eb" stroke="black" stroke-dasharray="5,2" cx="899.03" cy="-449.76" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="899.03" y="-458.26" font-family="Arial" font-size="10.00">C9</text>
+<text xml:space="preserve" text-anchor="middle" x="899.03" y="-446.26" font-family="Arial" font-size="10.00">g=35,00 h=21,80 f=56,80</text>
+<text xml:space="preserve" text-anchor="middle" x="899.03" y="-434.26" font-family="Arial" font-size="10.00">b=65% coletas=2</text>
+</g>
+<!-- S1&#45;&gt;S8 -->
+<g id="edge7" class="edge">
+<title>S1&#45;&gt;S8</title>
+<path fill="none" stroke="#9ca3af" d="M736.8,-553.52C768.88,-533.21 813.32,-505.05 847.59,-483.35"/>
+<polygon fill="#9ca3af" stroke="#9ca3af" points="849.11,-486.53 855.68,-478.22 845.36,-480.61 849.11,-486.53"/>
+<text xml:space="preserve" text-anchor="middle" x="831.74" y="-517.32" font-family="Arial" font-size="9.00">opcao</text>
+<text xml:space="preserve" text-anchor="middle" x="831.74" y="-506.82" font-family="Arial" font-size="9.00">31 + coleta</text>
+</g>
+<!-- P1 -->
+<g id="node9" class="node">
+<title>P1</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="1127.03,-477.76 1015.03,-477.76 1015.03,-421.76 1127.03,-421.76 1127.03,-477.76"/>
+<text xml:space="preserve" text-anchor="middle" x="1071.03" y="-464.26" font-family="Arial" font-size="10.00" fill="#92400e">+1 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="1071.03" y="-452.26" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="1071.03" y="-440.26" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="1071.03" y="-428.26" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- S1&#45;&gt;P1 -->
+<g id="edge8" class="edge">
+<title>S1&#45;&gt;P1</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M751.38,-557.28C764.91,-552.19 779.4,-547.02 793.03,-542.73 822.32,-533.52 830.5,-534.29 860.03,-525.87 923.29,-507.84 939.41,-503.9 1001.03,-480.87 1005.49,-479.21 1010.08,-477.41 1014.68,-475.56"/>
+</g>
+<!-- S3 -->
+<g id="node3" class="node">
+<title>S3</title>
+<ellipse fill="#dbeafe" stroke="black" cx="293.03" cy="-318.53" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="293.03" y="-327.03" font-family="Arial" font-size="10.00">C6</text>
+<text xml:space="preserve" text-anchor="middle" x="293.03" y="-315.03" font-family="Arial" font-size="10.00">g=31,00 h=16,00 f=47,00</text>
+<text xml:space="preserve" text-anchor="middle" x="293.03" y="-303.03" font-family="Arial" font-size="10.00">b=69% coletas=2</text>
+</g>
+<!-- S2&#45;&gt;S3 -->
+<g id="edge2" class="edge">
+<title>S2&#45;&gt;S3</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M293.03,-418.46C293.03,-401.97 293.03,-381.29 293.03,-363.1"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="296.53,-363.12 293.03,-353.12 289.53,-363.12 296.53,-363.12"/>
+<text xml:space="preserve" text-anchor="middle" x="315.53" y="-386.1" font-family="Arial" font-size="9.00">escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="315.53" y="-375.6" font-family="Arial" font-size="9.00">13 + coleta</text>
+</g>
+<!-- S4 -->
+<g id="node4" class="node">
+<title>S4</title>
+<ellipse fill="#dbeafe" stroke="black" cx="89.03" cy="-187.31" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-195.81" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-183.81" font-family="Arial" font-size="10.00">g=49,00 h=18,33 f=67,33</text>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-171.81" font-family="Arial" font-size="10.00">b=51% coletas=2</text>
+</g>
+<!-- S3&#45;&gt;S4 -->
+<g id="edge3" class="edge">
+<title>S3&#45;&gt;S4</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M250.76,-290.76C219.17,-270.75 175.77,-243.26 141.89,-221.79"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="144.12,-219.06 133.8,-216.67 140.38,-224.98 144.12,-219.06"/>
+<text xml:space="preserve" text-anchor="middle" x="223.12" y="-254.87" font-family="Arial" font-size="9.00">escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="223.12" y="-244.37" font-family="Arial" font-size="9.00">18</text>
+</g>
+<!-- S9 -->
+<g id="node10" class="node">
+<title>S9</title>
+<ellipse fill="#e5e7eb" stroke="black" stroke-dasharray="5,2" cx="293.03" cy="-187.31" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="293.03" y="-195.81" font-family="Arial" font-size="10.00">R6</text>
+<text xml:space="preserve" text-anchor="middle" x="293.03" y="-183.81" font-family="Arial" font-size="10.00">g=44,00 h=18,33 f=62,33</text>
+<text xml:space="preserve" text-anchor="middle" x="293.03" y="-171.81" font-family="Arial" font-size="10.00">b=56% coletas=2</text>
+</g>
+<!-- S3&#45;&gt;S9 -->
+<g id="edge9" class="edge">
+<title>S3&#45;&gt;S9</title>
+<path fill="none" stroke="#9ca3af" d="M293.03,-287.24C293.03,-270.27 293.03,-248.85 293.03,-230.28"/>
+<polygon fill="#9ca3af" stroke="#9ca3af" points="296.53,-230.38 293.03,-220.38 289.53,-230.38 296.53,-230.38"/>
+<text xml:space="preserve" text-anchor="middle" x="305.78" y="-254.87" font-family="Arial" font-size="9.00">opcao</text>
+<text xml:space="preserve" text-anchor="middle" x="305.78" y="-244.37" font-family="Arial" font-size="9.00">13</text>
+</g>
+<!-- A1 -->
+<g id="node11" class="node">
+<title>A1</title>
+<ellipse fill="white" stroke="black" cx="497.03" cy="-187.31" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="497.03" y="-195.81" font-family="Arial" font-size="10.00">C7</text>
+<text xml:space="preserve" text-anchor="middle" x="497.03" y="-183.81" font-family="Arial" font-size="10.00">g=52,00 h=28,00 f=80,00</text>
+<text xml:space="preserve" text-anchor="middle" x="497.03" y="-171.81" font-family="Arial" font-size="10.00">b=48% coletas=3</text>
+</g>
+<!-- S3&#45;&gt;A1 -->
+<g id="edge10" class="edge">
+<title>S3&#45;&gt;A1</title>
+<path fill="none" stroke="#9ca3af" d="M335.3,-290.76C367.3,-270.49 411.42,-242.54 445.49,-220.96"/>
+<polygon fill="#9ca3af" stroke="#9ca3af" points="446.96,-224.17 453.54,-215.86 443.22,-218.25 446.96,-224.17"/>
+<text xml:space="preserve" text-anchor="middle" x="429.74" y="-254.87" font-family="Arial" font-size="9.00">opcao</text>
+<text xml:space="preserve" text-anchor="middle" x="429.74" y="-244.37" font-family="Arial" font-size="9.00">19 + coleta</text>
+</g>
+<!-- S5 -->
+<g id="node5" class="node">
+<title>S5</title>
+<ellipse fill="#b6f2b6" stroke="black" cx="89.03" cy="-43.6" rx="85.03" ry="39.6"/>
+<ellipse fill="none" stroke="black" cx="89.03" cy="-43.6" rx="89.03" ry="43.6"/>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-58.1" font-family="Arial" font-size="10.00">OBJETIVO</text>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-46.1" font-family="Arial" font-size="10.00">C4</text>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-34.1" font-family="Arial" font-size="10.00">g=68,00 h=0,00 f=68,00</text>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-22.1" font-family="Arial" font-size="10.00">b=32% coletas=3</text>
+</g>
+<!-- S4&#45;&gt;S5 -->
+<g id="edge4" class="edge">
+<title>S4&#45;&gt;S5</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M89.03,-155.91C89.03,-139.72 89.03,-119.29 89.03,-100.37"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="92.53,-100.61 89.03,-90.61 85.53,-100.61 92.53,-100.61"/>
+<text xml:space="preserve" text-anchor="middle" x="111.53" y="-123.65" font-family="Arial" font-size="9.00">escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="111.53" y="-113.15" font-family="Arial" font-size="9.00">17 + coleta</text>
+</g>
+<!-- legend_solution -->
+<g id="node12" class="node">
+<title>legend_solution</title>
+<polygon fill="#dbeafe" stroke="black" points="946.9,-598.98 807.15,-598.98 807.15,-562.98 946.9,-562.98 946.9,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="877.03" y="-582.93" font-family="Arial" font-size="9.00">Estado no caminho escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="877.03" y="-572.43" font-family="Arial" font-size="9.00">arestas azuis ligam a rota final</text>
+</g>
+<!-- legend_recharge -->
+<g id="node13" class="node">
+<title>legend_recharge</title>
+<polygon fill="#dcfce7" stroke="#059669" points="1112.53,-598.98 973.53,-598.98 973.53,-562.98 1112.53,-562.98 1112.53,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1043.03" y="-582.93" font-family="Arial" font-size="9.00">Acao de recarga executada</text>
+<text xml:space="preserve" text-anchor="middle" x="1043.03" y="-572.43" font-family="Arial" font-size="9.00">recarga tambem entra em g(s)</text>
+</g>
+<!-- legend_goal -->
+<g id="node14" class="node">
+<title>legend_goal</title>
+<polygon fill="#b6f2b6" stroke="black" points="1230.28,-598.98 1143.78,-598.98 1143.78,-562.98 1230.28,-562.98 1230.28,-598.98"/>
+<polygon fill="none" stroke="black" points="1234.28,-602.98 1139.78,-602.98 1139.78,-558.98 1234.28,-558.98 1234.28,-602.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1187.03" y="-577.68" font-family="Arial" font-size="9.00">Destino / objetivo</text>
+</g>
+<!-- legend_expanded -->
+<g id="node15" class="node">
+<title>legend_expanded</title>
+<polygon fill="#e5e7eb" stroke="black" points="1424.9,-598.98 1261.15,-598.98 1261.15,-562.98 1424.9,-562.98 1424.9,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1343.03" y="-582.93" font-family="Arial" font-size="9.00">Expandido / Closed</text>
+<text xml:space="preserve" text-anchor="middle" x="1343.03" y="-572.43" font-family="Arial" font-size="9.00">(filhos nao desenhados nesta visao)</text>
+</g>
+<!-- legend_open -->
+<g id="node16" class="node">
+<title>legend_open</title>
+<polygon fill="white" stroke="black" points="1597.9,-598.98 1452.15,-598.98 1452.15,-562.98 1597.9,-562.98 1597.9,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1525.03" y="-582.93" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<text xml:space="preserve" text-anchor="middle" x="1525.03" y="-572.43" font-family="Arial" font-size="9.00">candidato ainda nao expandido</text>
+</g>
+<!-- legend_alternative -->
+<g id="node17" class="node">
+<title>legend_alternative</title>
+<polygon fill="white" stroke="black" points="1733.15,-598.98 1624.9,-598.98 1624.9,-562.98 1733.15,-562.98 1733.15,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1679.03" y="-582.93" font-family="Arial" font-size="9.00">Alternativa desenhada</text>
+<text xml:space="preserve" text-anchor="middle" x="1679.03" y="-572.43" font-family="Arial" font-size="9.00">aresta cinza</text>
+</g>
+<!-- legend_pruned -->
+<g id="node18" class="node">
+<title>legend_pruned</title>
+<polygon fill="#fef3c7" stroke="black" points="1950.03,-611.23 1760.03,-611.23 1760.03,-550.73 1950.03,-550.73 1950.03,-611.23"/>
+<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-598.68" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
+<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-588.18" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
+<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-577.68" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
+<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-567.18" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
+<text xml:space="preserve" text-anchor="middle" x="1855.03" y="-556.68" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
+</g>
+</g>
+</svg></div>
+        <div class="img-title">Árvore Focada (h5)</div>
+        <div class="img-desc">Azul é o caminho escolhido. Verde é ação de recarga. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
+      </div>
+      <div class="img-card" onclick="openLightbox(this)">
+        <div class="svg-container"><svg width="100%" height="100%" data-w="3290pt" data-h="646pt"
+ viewBox="0.00 0.00 3290.00 646.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 641.96)">
+<title>ArvoreBuscaCompleta</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-641.96 3286.03,-641.96 3286.03,4 -4,4"/>
+<text xml:space="preserve" text-anchor="middle" x="1641.01" y="-622.56" font-family="Arial" font-size="12.00">Arvore completa compactada por limite visual: estados omitidos existiram na execucao, mas nao foram desenhados para manter a figura legivel.</text>
+<g id="clust1" class="cluster">
+<title>cluster_legend</title>
+<polygon fill="none" stroke="#cccccc" points="2195.03,-509.71 2195.03,-607.71 3274.03,-607.71 3274.03,-509.71 2195.03,-509.71"/>
+<text xml:space="preserve" text-anchor="middle" x="2734.53" y="-593.26" font-family="Arial" font-size="11.00">Legenda</text>
+</g>
+<!-- N1 -->
+<g id="node1" class="node">
+<title>N1</title>
+<ellipse fill="#dbeafe" stroke="black" cx="2093.03" cy="-547.96" rx="85.03" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="2093.03" y="-556.46" font-family="Arial" font-size="10.00">C10</text>
+<text xml:space="preserve" text-anchor="middle" x="2093.03" y="-544.46" font-family="Arial" font-size="10.00">g=2,00 h=19,65 f=21,65</text>
+<text xml:space="preserve" text-anchor="middle" x="2093.03" y="-532.46" font-family="Arial" font-size="10.00">b=98% coletas=1</text>
+</g>
+<!-- N2 -->
+<g id="node2" class="node">
+<title>N2</title>
+<ellipse fill="#dbeafe" stroke="black" cx="1139.03" cy="-429.23" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1139.03" y="-437.73" font-family="Arial" font-size="10.00">R6</text>
+<text xml:space="preserve" text-anchor="middle" x="1139.03" y="-425.73" font-family="Arial" font-size="10.00">g=16,00 h=20,33 f=36,33</text>
+<text xml:space="preserve" text-anchor="middle" x="1139.03" y="-413.73" font-family="Arial" font-size="10.00">b=84% coletas=1</text>
+</g>
+<!-- N1&#45;&gt;N2 -->
+<g id="edge1" class="edge">
+<title>N1&#45;&gt;N2</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M2010.06,-540.47C1864,-528.5 1551.63,-500.45 1290.03,-460.34 1269.35,-457.17 1247.21,-453.13 1226.42,-449.04"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="1227.14,-445.61 1216.65,-447.08 1225.77,-452.48 1227.14,-445.61"/>
+<text xml:space="preserve" text-anchor="middle" x="1537.25" y="-485.29" font-family="Arial" font-size="9.00">14</text>
+</g>
+<!-- N8 -->
+<g id="node9" class="node">
+<title>N8</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="1388.03" cy="-429.23" rx="85.03" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1388.03" y="-437.73" font-family="Arial" font-size="10.00">C4</text>
+<text xml:space="preserve" text-anchor="middle" x="1388.03" y="-425.73" font-family="Arial" font-size="10.00">g=30,00 h=2,00 f=32,00</text>
+<text xml:space="preserve" text-anchor="middle" x="1388.03" y="-413.73" font-family="Arial" font-size="10.00">b=70% coletas=2</text>
+</g>
+<!-- N1&#45;&gt;N8 -->
+<g id="edge8" class="edge">
+<title>N1&#45;&gt;N8</title>
+<path fill="none" stroke="#555555" d="M2016.24,-534.24C1884.29,-512.39 1615.31,-467.86 1476.02,-444.8"/>
+<polygon fill="#555555" stroke="#555555" points="1476.92,-441.4 1466.49,-443.22 1475.78,-448.31 1476.92,-441.4"/>
+<text xml:space="preserve" text-anchor="middle" x="1784.17" y="-485.29" font-family="Arial" font-size="9.00">26 + coleta</text>
+</g>
+<!-- N16 -->
+<g id="node20" class="node">
+<title>N16</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="2093.03" cy="-429.23" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="2093.03" y="-437.73" font-family="Arial" font-size="10.00">C11</text>
+<text xml:space="preserve" text-anchor="middle" x="2093.03" y="-425.73" font-family="Arial" font-size="10.00">g=24,00 h=27,24 f=51,24</text>
+<text xml:space="preserve" text-anchor="middle" x="2093.03" y="-413.73" font-family="Arial" font-size="10.00">b=76% coletas=2</text>
+</g>
+<!-- N1&#45;&gt;N16 -->
+<g id="edge19" class="edge">
+<title>N1&#45;&gt;N16</title>
+<path fill="none" stroke="#555555" d="M2093.03,-516.59C2093.03,-502.95 2093.03,-486.63 2093.03,-471.86"/>
+<polygon fill="#555555" stroke="#555555" points="2096.53,-471.96 2093.03,-461.96 2089.53,-471.96 2096.53,-471.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2115.53" y="-485.29" font-family="Arial" font-size="9.00">20 + coleta</text>
+</g>
+<!-- N25 -->
+<g id="node30" class="node">
+<title>N25</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="2635.03" cy="-429.23" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="2635.03" y="-437.73" font-family="Arial" font-size="10.00">C9</text>
+<text xml:space="preserve" text-anchor="middle" x="2635.03" y="-425.73" font-family="Arial" font-size="10.00">g=35,00 h=21,80 f=56,80</text>
+<text xml:space="preserve" text-anchor="middle" x="2635.03" y="-413.73" font-family="Arial" font-size="10.00">b=65% coletas=2</text>
+</g>
+<!-- N1&#45;&gt;N25 -->
+<g id="edge29" class="edge">
+<title>N1&#45;&gt;N25</title>
+<path fill="none" stroke="#555555" d="M2147.49,-523.72C2160.9,-518.59 2175.34,-513.54 2189.03,-509.71 2308.14,-476.33 2449.23,-453.96 2540.34,-441.68"/>
+<polygon fill="#555555" stroke="#555555" points="2540.8,-445.15 2550.25,-440.36 2539.87,-438.21 2540.8,-445.15"/>
+<text xml:space="preserve" text-anchor="middle" x="2307.79" y="-485.29" font-family="Arial" font-size="9.00">31 + coleta</text>
+</g>
+<!-- X6 -->
+<g id="node34" class="node">
+<title>X6</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="2861.03,-457.23 2749.03,-457.23 2749.03,-401.23 2861.03,-401.23 2861.03,-457.23"/>
+<text xml:space="preserve" text-anchor="middle" x="2805.03" y="-443.73" font-family="Arial" font-size="10.00" fill="#92400e">+1 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="2805.03" y="-431.73" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="2805.03" y="-419.73" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="2805.03" y="-407.73" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N1&#45;&gt;X6 -->
+<g id="edge33" class="edge">
+<title>N1&#45;&gt;X6</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M2146.26,-523.26C2159.96,-518.01 2174.84,-513.03 2189.03,-509.71 2248.45,-495.79 2676.91,-475.48 2736.03,-460.34 2740.21,-459.27 2744.46,-457.98 2748.69,-456.53"/>
+</g>
+<!-- N3 -->
+<g id="node3" class="node">
+<title>N3</title>
+<ellipse fill="#dbeafe" stroke="black" cx="433.03" cy="-310.5" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="433.03" y="-319" font-family="Arial" font-size="10.00">C6</text>
+<text xml:space="preserve" text-anchor="middle" x="433.03" y="-307" font-family="Arial" font-size="10.00">g=31,00 h=16,00 f=47,00</text>
+<text xml:space="preserve" text-anchor="middle" x="433.03" y="-295" font-family="Arial" font-size="10.00">b=69% coletas=2</text>
+</g>
+<!-- N2&#45;&gt;N3 -->
+<g id="edge2" class="edge">
+<title>N2&#45;&gt;N3</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M1059.41,-415.07C927.66,-393.28 665,-349.86 525.34,-326.77"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="526.05,-323.34 515.61,-325.16 524.91,-330.24 526.05,-323.34"/>
+<text xml:space="preserve" text-anchor="middle" x="829.7" y="-366.57" font-family="Arial" font-size="9.00">13 + coleta</text>
+</g>
+<!-- N4 -->
+<g id="node4" class="node">
+<title>N4</title>
+<ellipse fill="#dbeafe" stroke="black" cx="89.03" cy="-183.29" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-191.79" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-179.79" font-family="Arial" font-size="10.00">g=49,00 h=18,33 f=67,33</text>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-167.79" font-family="Arial" font-size="10.00">b=51% coletas=2</text>
+</g>
+<!-- N3&#45;&gt;N4 -->
+<g id="edge3" class="edge">
+<title>N3&#45;&gt;N4</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M370.97,-287.82C321.78,-270.53 251.37,-245.54 190.03,-222.89 180.16,-219.25 169.77,-215.35 159.55,-211.48"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="161.11,-208.33 150.52,-208.05 158.63,-214.87 161.11,-208.33"/>
+<text xml:space="preserve" text-anchor="middle" x="281.96" y="-247.84" font-family="Arial" font-size="9.00">18</text>
+</g>
+<!-- N6 -->
+<g id="node6" class="node">
+<title>N6</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="291.03" cy="-183.29" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="291.03" y="-191.79" font-family="Arial" font-size="10.00">R6</text>
+<text xml:space="preserve" text-anchor="middle" x="291.03" y="-179.79" font-family="Arial" font-size="10.00">g=44,00 h=18,33 f=62,33</text>
+<text xml:space="preserve" text-anchor="middle" x="291.03" y="-167.79" font-family="Arial" font-size="10.00">b=56% coletas=2</text>
+</g>
+<!-- N3&#45;&gt;N6 -->
+<g id="edge5" class="edge">
+<title>N3&#45;&gt;N6</title>
+<path fill="none" stroke="#555555" d="M400.81,-281.09C380.29,-263 353.54,-239.42 331.59,-220.06"/>
+<polygon fill="#555555" stroke="#555555" points="334.07,-217.58 324.26,-213.59 329.45,-222.83 334.07,-217.58"/>
+<text xml:space="preserve" text-anchor="middle" x="375.78" y="-247.84" font-family="Arial" font-size="9.00">13</text>
+</g>
+<!-- N7 -->
+<g id="node8" class="node">
+<title>N7</title>
+<ellipse fill="white" stroke="black" cx="493.03" cy="-183.29" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="493.03" y="-191.79" font-family="Arial" font-size="10.00">C7</text>
+<text xml:space="preserve" text-anchor="middle" x="493.03" y="-179.79" font-family="Arial" font-size="10.00">g=52,00 h=28,00 f=80,00</text>
+<text xml:space="preserve" text-anchor="middle" x="493.03" y="-167.79" font-family="Arial" font-size="10.00">b=48% coletas=3</text>
+</g>
+<!-- N3&#45;&gt;N7 -->
+<g id="edge7" class="edge">
+<title>N3&#45;&gt;N7</title>
+<path fill="none" stroke="#555555" d="M447.4,-279.51C455.25,-263.14 465.07,-242.64 473.59,-224.86"/>
+<polygon fill="#555555" stroke="#555555" points="476.75,-226.37 477.91,-215.84 470.44,-223.34 476.75,-226.37"/>
+<text xml:space="preserve" text-anchor="middle" x="485.53" y="-247.84" font-family="Arial" font-size="9.00">19 + coleta</text>
+</g>
+<!-- N5 -->
+<g id="node5" class="node">
+<title>N5</title>
+<ellipse fill="#b6f2b6" stroke="black" cx="89.03" cy="-43.6" rx="85.03" ry="39.6"/>
+<ellipse fill="none" stroke="black" cx="89.03" cy="-43.6" rx="89.03" ry="43.6"/>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-58.1" font-family="Arial" font-size="10.00">OBJETIVO</text>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-46.1" font-family="Arial" font-size="10.00">C4</text>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-34.1" font-family="Arial" font-size="10.00">g=68,00 h=0,00 f=68,00</text>
+<text xml:space="preserve" text-anchor="middle" x="89.03" y="-22.1" font-family="Arial" font-size="10.00">b=32% coletas=3</text>
+</g>
+<!-- N4&#45;&gt;N5 -->
+<g id="edge4" class="edge">
+<title>N4&#45;&gt;N5</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M89.03,-151.73C89.03,-136.63 89.03,-117.93 89.03,-100.4"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="92.53,-100.63 89.03,-90.63 85.53,-100.63 92.53,-100.63"/>
+<text xml:space="preserve" text-anchor="middle" x="111.53" y="-112.15" font-family="Arial" font-size="9.00">17 + coleta</text>
+</g>
+<!-- X1 -->
+<g id="node7" class="node">
+<title>X1</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="347.03,-71.6 235.03,-71.6 235.03,-15.6 347.03,-15.6 347.03,-71.6"/>
+<text xml:space="preserve" text-anchor="middle" x="291.03" y="-58.1" font-family="Arial" font-size="10.00" fill="#92400e">+2 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="291.03" y="-46.1" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="291.03" y="-34.1" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="291.03" y="-22.1" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N6&#45;&gt;X1 -->
+<g id="edge6" class="edge">
+<title>N6&#45;&gt;X1</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M291.03,-151.73C291.03,-127.81 291.03,-94.83 291.03,-71.81"/>
+</g>
+<!-- N9 -->
+<g id="node10" class="node">
+<title>N9</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="1083.03" cy="-310.5" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1083.03" y="-319" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="1083.03" y="-307" font-family="Arial" font-size="10.00">g=47,00 h=18,33 f=65,33</text>
+<text xml:space="preserve" text-anchor="middle" x="1083.03" y="-295" font-family="Arial" font-size="10.00">b=53% coletas=2</text>
+</g>
+<!-- N8&#45;&gt;N9 -->
+<g id="edge9" class="edge">
+<title>N8&#45;&gt;N9</title>
+<path fill="none" stroke="#555555" d="M1330.3,-406.14C1279.79,-386.81 1206.29,-358.68 1152.55,-338.11"/>
+<polygon fill="#555555" stroke="#555555" points="1154.08,-334.95 1143.49,-334.64 1151.58,-341.49 1154.08,-334.95"/>
+<text xml:space="preserve" text-anchor="middle" x="1249.92" y="-366.57" font-family="Arial" font-size="9.00">17</text>
+</g>
+<!-- N14 -->
+<g id="node18" class="node">
+<title>N14</title>
+<ellipse fill="white" stroke="black" cx="1285.03" cy="-310.5" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1285.03" y="-319" font-family="Arial" font-size="10.00">R1</text>
+<text xml:space="preserve" text-anchor="middle" x="1285.03" y="-307" font-family="Arial" font-size="10.00">g=52,00 h=17,65 f=69,65</text>
+<text xml:space="preserve" text-anchor="middle" x="1285.03" y="-295" font-family="Arial" font-size="10.00">b=48% coletas=2</text>
+</g>
+<!-- N8&#45;&gt;N14 -->
+<g id="edge17" class="edge">
+<title>N8&#45;&gt;N14</title>
+<path fill="none" stroke="#555555" d="M1362.57,-399.38C1349.07,-384.08 1332.34,-365.12 1317.88,-348.73"/>
+<polygon fill="#555555" stroke="#555555" points="1320.8,-346.75 1311.56,-341.57 1315.55,-351.38 1320.8,-346.75"/>
+<text xml:space="preserve" text-anchor="middle" x="1344.87" y="-366.57" font-family="Arial" font-size="9.00">22</text>
+</g>
+<!-- N15 -->
+<g id="node19" class="node">
+<title>N15</title>
+<ellipse fill="white" stroke="black" cx="1487.03" cy="-310.5" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1487.03" y="-319" font-family="Arial" font-size="10.00">C10</text>
+<text xml:space="preserve" text-anchor="middle" x="1487.03" y="-307" font-family="Arial" font-size="10.00">g=56,00 h=17,65 f=73,65</text>
+<text xml:space="preserve" text-anchor="middle" x="1487.03" y="-295" font-family="Arial" font-size="10.00">b=44% coletas=2</text>
+</g>
+<!-- N8&#45;&gt;N15 -->
+<g id="edge18" class="edge">
+<title>N8&#45;&gt;N15</title>
+<path fill="none" stroke="#555555" d="M1412.76,-399.08C1425.51,-384.03 1441.23,-365.51 1454.91,-349.37"/>
+<polygon fill="#555555" stroke="#555555" points="1457.5,-351.74 1461.3,-341.85 1452.16,-347.21 1457.5,-351.74"/>
+<text xml:space="preserve" text-anchor="middle" x="1445.75" y="-366.57" font-family="Arial" font-size="9.00">26</text>
+</g>
+<!-- N10 -->
+<g id="node11" class="node">
+<title>N10</title>
+<ellipse fill="#dcfce7" stroke="#059669" cx="695.03" cy="-183.29" rx="88.74" ry="39.6"/>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-197.79" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-185.79" font-family="Arial" font-size="10.00">g=48,00 h=18,33 f=66,33</text>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-173.79" font-family="Arial" font-size="10.00">b=58% coletas=2</text>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-161.79" font-family="Arial" font-size="10.00">recarga</text>
+</g>
+<!-- N9&#45;&gt;N10 -->
+<g id="edge10" class="edge">
+<title>N9&#45;&gt;N10</title>
+<path fill="none" stroke="#555555" d="M1014.45,-290.31C956.03,-273.61 870.03,-248.16 796.03,-222.89 788.06,-220.17 779.79,-217.22 771.56,-214.2"/>
+<polygon fill="#555555" stroke="#555555" points="772.8,-210.93 762.21,-210.73 770.37,-217.49 772.8,-210.93"/>
+<text xml:space="preserve" text-anchor="middle" x="917.5" y="-247.84" font-family="Arial" font-size="9.00">recarga 1</text>
+</g>
+<!-- N11 -->
+<g id="node13" class="node">
+<title>N11</title>
+<ellipse fill="#dcfce7" stroke="#059669" cx="897.03" cy="-183.29" rx="88.74" ry="39.6"/>
+<text xml:space="preserve" text-anchor="middle" x="897.03" y="-197.79" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="897.03" y="-185.79" font-family="Arial" font-size="10.00">g=48,40 h=18,33 f=66,73</text>
+<text xml:space="preserve" text-anchor="middle" x="897.03" y="-173.79" font-family="Arial" font-size="10.00">b=60% coletas=2</text>
+<text xml:space="preserve" text-anchor="middle" x="897.03" y="-161.79" font-family="Arial" font-size="10.00">recarga</text>
+</g>
+<!-- N9&#45;&gt;N11 -->
+<g id="edge12" class="edge">
+<title>N9&#45;&gt;N11</title>
+<path fill="none" stroke="#555555" d="M1042.67,-282.34C1016.94,-265.02 983.21,-242.31 954.68,-223.1"/>
+<polygon fill="#555555" stroke="#555555" points="956.73,-220.26 946.48,-217.58 952.82,-226.07 956.73,-220.26"/>
+<text xml:space="preserve" text-anchor="middle" x="1024.42" y="-247.84" font-family="Arial" font-size="9.00">recarga 1,4</text>
+</g>
+<!-- N12 -->
+<g id="node15" class="node">
+<title>N12</title>
+<ellipse fill="#dcfce7" stroke="#059669" cx="1099.03" cy="-183.29" rx="88.74" ry="39.6"/>
+<text xml:space="preserve" text-anchor="middle" x="1099.03" y="-197.79" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="1099.03" y="-185.79" font-family="Arial" font-size="10.00">g=50,00 h=18,33 f=68,33</text>
+<text xml:space="preserve" text-anchor="middle" x="1099.03" y="-173.79" font-family="Arial" font-size="10.00">b=68% coletas=2</text>
+<text xml:space="preserve" text-anchor="middle" x="1099.03" y="-161.79" font-family="Arial" font-size="10.00">recarga</text>
+</g>
+<!-- N9&#45;&gt;N12 -->
+<g id="edge14" class="edge">
+<title>N9&#45;&gt;N12</title>
+<path fill="none" stroke="#555555" d="M1086.9,-279.19C1088.63,-265.7 1090.7,-249.45 1092.65,-234.23"/>
+<polygon fill="#555555" stroke="#555555" points="1096.11,-234.73 1093.91,-224.37 1089.17,-233.84 1096.11,-234.73"/>
+<text xml:space="preserve" text-anchor="middle" x="1110.53" y="-247.84" font-family="Arial" font-size="9.00">recarga 3</text>
+</g>
+<!-- N13 -->
+<g id="node16" class="node">
+<title>N13</title>
+<ellipse fill="#dcfce7" stroke="#059669" cx="1301.03" cy="-183.29" rx="88.74" ry="39.6"/>
+<text xml:space="preserve" text-anchor="middle" x="1301.03" y="-197.79" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="1301.03" y="-185.79" font-family="Arial" font-size="10.00">g=50,40 h=18,33 f=68,73</text>
+<text xml:space="preserve" text-anchor="middle" x="1301.03" y="-173.79" font-family="Arial" font-size="10.00">b=70% coletas=2</text>
+<text xml:space="preserve" text-anchor="middle" x="1301.03" y="-161.79" font-family="Arial" font-size="10.00">recarga</text>
+</g>
+<!-- N9&#45;&gt;N13 -->
+<g id="edge15" class="edge">
+<title>N9&#45;&gt;N13</title>
+<path fill="none" stroke="#555555" d="M1128.46,-283.41C1160.06,-265.26 1202.61,-240.82 1237.55,-220.76"/>
+<polygon fill="#555555" stroke="#555555" points="1238.94,-223.99 1245.87,-215.97 1235.46,-217.92 1238.94,-223.99"/>
+<text xml:space="preserve" text-anchor="middle" x="1215.28" y="-247.84" font-family="Arial" font-size="9.00">recarga 3,4</text>
+</g>
+<!-- X4 -->
+<g id="node17" class="node">
+<title>X4</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="1527.03,-211.29 1415.03,-211.29 1415.03,-155.29 1527.03,-155.29 1527.03,-211.29"/>
+<text xml:space="preserve" text-anchor="middle" x="1471.03" y="-197.79" font-family="Arial" font-size="10.00" fill="#92400e">+10 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="1471.03" y="-185.79" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="1471.03" y="-173.79" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="1471.03" y="-161.79" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N9&#45;&gt;X4 -->
+<g id="edge16" class="edge">
+<title>N9&#45;&gt;X4</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M1149.21,-289.4C1160.8,-285.99 1172.75,-282.53 1184.03,-279.39 1280.45,-252.53 1309.15,-260.19 1402.03,-222.89 1409.93,-219.72 1418.05,-215.82 1425.82,-211.73"/>
+</g>
+<!-- X2 -->
+<g id="node12" class="node">
+<title>X2</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="751.03,-71.6 639.03,-71.6 639.03,-15.6 751.03,-15.6 751.03,-71.6"/>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-58.1" font-family="Arial" font-size="10.00" fill="#92400e">+2 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-46.1" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-34.1" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="695.03" y="-22.1" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N10&#45;&gt;X2 -->
+<g id="edge11" class="edge">
+<title>N10&#45;&gt;X2</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M695.03,-143.2C695.03,-120.46 695.03,-92.36 695.03,-71.98"/>
+</g>
+<!-- X3 -->
+<g id="node14" class="node">
+<title>X3</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="953.03,-71.6 841.03,-71.6 841.03,-15.6 953.03,-15.6 953.03,-71.6"/>
+<text xml:space="preserve" text-anchor="middle" x="897.03" y="-58.1" font-family="Arial" font-size="10.00" fill="#92400e">+2 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="897.03" y="-46.1" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="897.03" y="-34.1" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="897.03" y="-22.1" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N11&#45;&gt;X3 -->
+<g id="edge13" class="edge">
+<title>N11&#45;&gt;X3</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M897.03,-143.2C897.03,-120.46 897.03,-92.36 897.03,-71.98"/>
+</g>
+<!-- N17 -->
+<g id="node21" class="node">
+<title>N17</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="1689.03" cy="-310.5" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1689.03" y="-319" font-family="Arial" font-size="10.00">R6</text>
+<text xml:space="preserve" text-anchor="middle" x="1689.03" y="-307" font-family="Arial" font-size="10.00">g=41,00 h=18,33 f=59,33</text>
+<text xml:space="preserve" text-anchor="middle" x="1689.03" y="-295" font-family="Arial" font-size="10.00">b=59% coletas=2</text>
+</g>
+<!-- N16&#45;&gt;N17 -->
+<g id="edge20" class="edge">
+<title>N16&#45;&gt;N17</title>
+<path fill="none" stroke="#555555" d="M2024.67,-408.93C1963.22,-391.52 1870.51,-365.12 1790.03,-341.62 1782.36,-339.38 1774.37,-337.03 1766.39,-334.67"/>
+<polygon fill="#555555" stroke="#555555" points="1767.58,-331.37 1757,-331.88 1765.59,-338.08 1767.58,-331.37"/>
+<text xml:space="preserve" text-anchor="middle" x="1903.5" y="-366.57" font-family="Arial" font-size="9.00">17</text>
+</g>
+<!-- N19 -->
+<g id="node23" class="node">
+<title>N19</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="1891.03" cy="-310.5" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1891.03" y="-319" font-family="Arial" font-size="10.00">C10</text>
+<text xml:space="preserve" text-anchor="middle" x="1891.03" y="-307" font-family="Arial" font-size="10.00">g=44,00 h=17,65 f=61,65</text>
+<text xml:space="preserve" text-anchor="middle" x="1891.03" y="-295" font-family="Arial" font-size="10.00">b=56% coletas=2</text>
+</g>
+<!-- N16&#45;&gt;N19 -->
+<g id="edge22" class="edge">
+<title>N16&#45;&gt;N19</title>
+<path fill="none" stroke="#555555" d="M2047.7,-402.03C2017.55,-384.61 1977.78,-361.63 1945.85,-343.18"/>
+<polygon fill="#555555" stroke="#555555" points="1947.93,-340.34 1937.52,-338.37 1944.43,-346.4 1947.93,-340.34"/>
+<text xml:space="preserve" text-anchor="middle" x="2003.34" y="-366.57" font-family="Arial" font-size="9.00">20</text>
+</g>
+<!-- N23 -->
+<g id="node27" class="node">
+<title>N23</title>
+<ellipse fill="white" stroke="black" cx="2093.03" cy="-310.5" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="2093.03" y="-319" font-family="Arial" font-size="10.00">C7</text>
+<text xml:space="preserve" text-anchor="middle" x="2093.03" y="-307" font-family="Arial" font-size="10.00">g=51,00 h=28,00 f=79,00</text>
+<text xml:space="preserve" text-anchor="middle" x="2093.03" y="-295" font-family="Arial" font-size="10.00">b=49% coletas=3</text>
+</g>
+<!-- N16&#45;&gt;N23 -->
+<g id="edge26" class="edge">
+<title>N16&#45;&gt;N23</title>
+<path fill="none" stroke="#555555" d="M2093.03,-397.87C2093.03,-384.22 2093.03,-367.9 2093.03,-353.14"/>
+<polygon fill="#555555" stroke="#555555" points="2096.53,-353.23 2093.03,-343.23 2089.53,-353.23 2096.53,-353.23"/>
+<text xml:space="preserve" text-anchor="middle" x="2115.53" y="-366.57" font-family="Arial" font-size="9.00">25 + coleta</text>
+</g>
+<!-- N24 -->
+<g id="node28" class="node">
+<title>N24</title>
+<ellipse fill="white" stroke="black" cx="2295.03" cy="-310.5" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="2295.03" y="-319" font-family="Arial" font-size="10.00">C12</text>
+<text xml:space="preserve" text-anchor="middle" x="2295.03" y="-307" font-family="Arial" font-size="10.00">g=47,00 h=37,70 f=84,70</text>
+<text xml:space="preserve" text-anchor="middle" x="2295.03" y="-295" font-family="Arial" font-size="10.00">b=53% coletas=3</text>
+</g>
+<!-- N16&#45;&gt;N24 -->
+<g id="edge27" class="edge">
+<title>N16&#45;&gt;N24</title>
+<path fill="none" stroke="#555555" d="M2138.36,-402.03C2168.51,-384.61 2208.28,-361.63 2240.21,-343.18"/>
+<polygon fill="#555555" stroke="#555555" points="2241.63,-346.4 2248.54,-338.37 2238.13,-340.34 2241.63,-346.4"/>
+<text xml:space="preserve" text-anchor="middle" x="2222.59" y="-366.57" font-family="Arial" font-size="9.00">21 + coleta</text>
+</g>
+<!-- X5 -->
+<g id="node29" class="node">
+<title>X5</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="2521.03,-338.5 2409.03,-338.5 2409.03,-282.5 2521.03,-282.5 2521.03,-338.5"/>
+<text xml:space="preserve" text-anchor="middle" x="2465.03" y="-325" font-family="Arial" font-size="10.00" fill="#92400e">+1 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="2465.03" y="-313" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="2465.03" y="-301" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="2465.03" y="-289" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N16&#45;&gt;X5 -->
+<g id="edge28" class="edge">
+<title>N16&#45;&gt;X5</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M2164.9,-410.57C2226.83,-394.67 2318.28,-369.55 2396.03,-341.62 2400.21,-340.11 2404.5,-338.48 2408.79,-336.77"/>
+</g>
+<!-- N18 -->
+<g id="node22" class="node">
+<title>N18</title>
+<ellipse fill="white" stroke="black" cx="1673.03" cy="-183.29" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1673.03" y="-191.79" font-family="Arial" font-size="10.00">C6</text>
+<text xml:space="preserve" text-anchor="middle" x="1673.03" y="-179.79" font-family="Arial" font-size="10.00">g=56,00 h=14,00 f=70,00</text>
+<text xml:space="preserve" text-anchor="middle" x="1673.03" y="-167.79" font-family="Arial" font-size="10.00">b=44% coletas=3</text>
+</g>
+<!-- N17&#45;&gt;N18 -->
+<g id="edge21" class="edge">
+<title>N17&#45;&gt;N18</title>
+<path fill="none" stroke="#555555" d="M1685.16,-279.19C1683.11,-263.16 1680.56,-243.24 1678.33,-225.8"/>
+<polygon fill="#555555" stroke="#555555" points="1681.85,-225.74 1677.11,-216.26 1674.91,-226.62 1681.85,-225.74"/>
+<text xml:space="preserve" text-anchor="middle" x="1704.49" y="-247.84" font-family="Arial" font-size="9.00">13 + coleta</text>
+</g>
+<!-- N20 -->
+<g id="node24" class="node">
+<title>N20</title>
+<ellipse fill="white" stroke="black" cx="1872.03" cy="-183.29" rx="85.03" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1872.03" y="-191.79" font-family="Arial" font-size="10.00">C4</text>
+<text xml:space="preserve" text-anchor="middle" x="1872.03" y="-179.79" font-family="Arial" font-size="10.00">g=72,00 h=0,00 f=72,00</text>
+<text xml:space="preserve" text-anchor="middle" x="1872.03" y="-167.79" font-family="Arial" font-size="10.00">b=28% coletas=3</text>
+</g>
+<!-- N19&#45;&gt;N20 -->
+<g id="edge23" class="edge">
+<title>N19&#45;&gt;N20</title>
+<path fill="none" stroke="#555555" d="M1886.43,-279.19C1884,-263.16 1880.97,-243.24 1878.33,-225.8"/>
+<polygon fill="#555555" stroke="#555555" points="1881.84,-225.62 1876.88,-216.26 1874.92,-226.67 1881.84,-225.62"/>
+<text xml:space="preserve" text-anchor="middle" x="1905.17" y="-247.84" font-family="Arial" font-size="9.00">26 + coleta</text>
+</g>
+<!-- N21 -->
+<g id="node25" class="node">
+<title>N21</title>
+<ellipse fill="white" stroke="black" cx="2071.03" cy="-183.29" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="2071.03" y="-191.79" font-family="Arial" font-size="10.00">C9</text>
+<text xml:space="preserve" text-anchor="middle" x="2071.03" y="-179.79" font-family="Arial" font-size="10.00">g=77,00 h=19,80 f=96,80</text>
+<text xml:space="preserve" text-anchor="middle" x="2071.03" y="-167.79" font-family="Arial" font-size="10.00">b=23% coletas=3</text>
+</g>
+<!-- N19&#45;&gt;N21 -->
+<g id="edge24" class="edge">
+<title>N19&#45;&gt;N21</title>
+<path fill="none" stroke="#555555" d="M1930.09,-282.34C1957.24,-263.45 1993.61,-238.15 2022.6,-217.98"/>
+<polygon fill="#555555" stroke="#555555" points="2024.29,-221.07 2030.5,-212.49 2020.29,-215.33 2024.29,-221.07"/>
+<text xml:space="preserve" text-anchor="middle" x="2003.53" y="-247.84" font-family="Arial" font-size="9.00">31 + coleta</text>
+</g>
+<!-- N22 -->
+<g id="node26" class="node">
+<title>N22</title>
+<ellipse fill="white" stroke="black" cx="2273.03" cy="-183.29" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="2273.03" y="-191.79" font-family="Arial" font-size="10.00">C13</text>
+<text xml:space="preserve" text-anchor="middle" x="2273.03" y="-179.79" font-family="Arial" font-size="10.00">g=70,00 h=28,00 f=98,00</text>
+<text xml:space="preserve" text-anchor="middle" x="2273.03" y="-167.79" font-family="Arial" font-size="10.00">b=30% coletas=3</text>
+</g>
+<!-- N19&#45;&gt;N22 -->
+<g id="edge25" class="edge">
+<title>N19&#45;&gt;N22</title>
+<path fill="none" stroke="#555555" d="M1957.53,-289.56C2027.31,-268.54 2132.27,-236.6 2172.03,-222.89 2182.54,-219.27 2193.6,-215.25 2204.39,-211.22"/>
+<polygon fill="#555555" stroke="#555555" points="2205.52,-214.54 2213.64,-207.74 2203.05,-207.99 2205.52,-214.54"/>
+<text xml:space="preserve" text-anchor="middle" x="2121.03" y="-247.84" font-family="Arial" font-size="9.00">24 + coleta</text>
+</g>
+<!-- N26 -->
+<g id="node31" class="node">
+<title>N26</title>
+<ellipse fill="white" stroke="black" cx="2635.03" cy="-310.5" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="2635.03" y="-319" font-family="Arial" font-size="10.00">R3</text>
+<text xml:space="preserve" text-anchor="middle" x="2635.03" y="-307" font-family="Arial" font-size="10.00">g=51,00 h=24,14 f=75,14</text>
+<text xml:space="preserve" text-anchor="middle" x="2635.03" y="-295" font-family="Arial" font-size="10.00">b=49% coletas=2</text>
+</g>
+<!-- N25&#45;&gt;N26 -->
+<g id="edge30" class="edge">
+<title>N25&#45;&gt;N26</title>
+<path fill="none" stroke="#555555" d="M2635.03,-397.87C2635.03,-384.22 2635.03,-367.9 2635.03,-353.14"/>
+<polygon fill="#555555" stroke="#555555" points="2638.53,-353.23 2635.03,-343.23 2631.53,-353.23 2638.53,-353.23"/>
+<text xml:space="preserve" text-anchor="middle" x="2640.28" y="-366.57" font-family="Arial" font-size="9.00">16</text>
+</g>
+<!-- N27 -->
+<g id="node32" class="node">
+<title>N27</title>
+<ellipse fill="white" stroke="black" cx="2837.03" cy="-310.5" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="2837.03" y="-319" font-family="Arial" font-size="10.00">C1</text>
+<text xml:space="preserve" text-anchor="middle" x="2837.03" y="-307" font-family="Arial" font-size="10.00">g=61,00 h=21,00 f=82,00</text>
+<text xml:space="preserve" text-anchor="middle" x="2837.03" y="-295" font-family="Arial" font-size="10.00">b=39% coletas=3</text>
+</g>
+<!-- N25&#45;&gt;N27 -->
+<g id="edge31" class="edge">
+<title>N25&#45;&gt;N27</title>
+<path fill="none" stroke="#555555" d="M2680.36,-402.03C2710.51,-384.61 2750.28,-361.63 2782.21,-343.18"/>
+<polygon fill="#555555" stroke="#555555" points="2783.63,-346.4 2790.54,-338.37 2780.13,-340.34 2783.63,-346.4"/>
+<text xml:space="preserve" text-anchor="middle" x="2764.59" y="-366.57" font-family="Arial" font-size="9.00">24 + coleta</text>
+</g>
+<!-- N28 -->
+<g id="node33" class="node">
+<title>N28</title>
+<ellipse fill="white" stroke="black" cx="3039.03" cy="-310.5" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="3039.03" y="-319" font-family="Arial" font-size="10.00">C10</text>
+<text xml:space="preserve" text-anchor="middle" x="3039.03" y="-307" font-family="Arial" font-size="10.00">g=66,00 h=17,65 f=83,65</text>
+<text xml:space="preserve" text-anchor="middle" x="3039.03" y="-295" font-family="Arial" font-size="10.00">b=34% coletas=2</text>
+</g>
+<!-- N25&#45;&gt;N28 -->
+<g id="edge32" class="edge">
+<title>N25&#45;&gt;N28</title>
+<path fill="none" stroke="#555555" d="M2701.93,-408.34C2713.62,-404.91 2725.67,-401.39 2737.03,-398.12 2826.2,-372.42 2848.9,-367.43 2938.03,-341.62 2945.7,-339.4 2953.7,-337.06 2961.68,-334.7"/>
+<polygon fill="#555555" stroke="#555555" points="2962.47,-338.12 2971.07,-331.92 2960.49,-331.4 2962.47,-338.12"/>
+<text xml:space="preserve" text-anchor="middle" x="2859.7" y="-366.57" font-family="Arial" font-size="9.00">31</text>
+</g>
+<!-- legend_solution -->
+<g id="node35" class="node">
+<title>legend_solution</title>
+<polygon fill="#dbeafe" stroke="black" points="2342.9,-565.96 2203.15,-565.96 2203.15,-529.96 2342.9,-529.96 2342.9,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2273.03" y="-549.91" font-family="Arial" font-size="9.00">Estado no caminho escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="2273.03" y="-539.41" font-family="Arial" font-size="9.00">arestas azuis ligam a rota final</text>
+</g>
+<!-- legend_recharge -->
+<g id="node36" class="node">
+<title>legend_recharge</title>
+<polygon fill="#dcfce7" stroke="#059669" points="2506.53,-565.96 2367.53,-565.96 2367.53,-529.96 2506.53,-529.96 2506.53,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2437.03" y="-549.91" font-family="Arial" font-size="9.00">Acao de recarga executada</text>
+<text xml:space="preserve" text-anchor="middle" x="2437.03" y="-539.41" font-family="Arial" font-size="9.00">recarga tambem entra em g(s)</text>
+</g>
+<!-- legend_goal -->
+<g id="node37" class="node">
+<title>legend_goal</title>
+<polygon fill="#b6f2b6" stroke="black" points="2622.28,-565.96 2535.78,-565.96 2535.78,-529.96 2622.28,-529.96 2622.28,-565.96"/>
+<polygon fill="none" stroke="black" points="2626.28,-569.96 2531.78,-569.96 2531.78,-525.96 2626.28,-525.96 2626.28,-569.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2579.03" y="-544.66" font-family="Arial" font-size="9.00">Destino / objetivo</text>
+</g>
+<!-- legend_expanded -->
+<g id="node38" class="node">
+<title>legend_expanded</title>
+<polygon fill="#e5e7eb" stroke="black" points="2747.15,-565.96 2650.9,-565.96 2650.9,-529.96 2747.15,-529.96 2747.15,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2699.03" y="-544.66" font-family="Arial" font-size="9.00">Expandido / Closed</text>
+</g>
+<!-- legend_open -->
+<g id="node39" class="node">
+<title>legend_open</title>
+<polygon fill="white" stroke="black" points="2917.9,-565.96 2772.15,-565.96 2772.15,-529.96 2917.9,-529.96 2917.9,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2845.03" y="-549.91" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<text xml:space="preserve" text-anchor="middle" x="2845.03" y="-539.41" font-family="Arial" font-size="9.00">candidato ainda nao expandido</text>
+</g>
+<!-- legend_alternative -->
+<g id="node40" class="node">
+<title>legend_alternative</title>
+<polygon fill="white" stroke="black" points="3051.15,-565.96 2942.9,-565.96 2942.9,-529.96 3051.15,-529.96 3051.15,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2997.03" y="-549.91" font-family="Arial" font-size="9.00">Alternativa desenhada</text>
+<text xml:space="preserve" text-anchor="middle" x="2997.03" y="-539.41" font-family="Arial" font-size="9.00">aresta cinza</text>
+</g>
+<!-- legend_pruned -->
+<g id="node41" class="node">
+<title>legend_pruned</title>
+<polygon fill="#fef3c7" stroke="black" points="3266.03,-578.21 3076.03,-578.21 3076.03,-517.71 3266.03,-517.71 3266.03,-578.21"/>
+<text xml:space="preserve" text-anchor="middle" x="3171.03" y="-565.66" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
+<text xml:space="preserve" text-anchor="middle" x="3171.03" y="-555.16" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
+<text xml:space="preserve" text-anchor="middle" x="3171.03" y="-544.66" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
+<text xml:space="preserve" text-anchor="middle" x="3171.03" y="-534.16" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
+<text xml:space="preserve" text-anchor="middle" x="3171.03" y="-523.66" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
+</g>
+</g>
+</svg></div>
+        <div class="img-title">Árvore Completa Compactada (h5)</div>
+        <div class="img-desc">Mostra uma árvore compactada. As caixas amarelas são estados gerados, mas não desenhados para manter a figura legível; não representam poda do A*.</div>
+      </div>
+    </div>
+
+    <h3 style="font-size: 1.1rem; margin-bottom: 12px; color: var(--node-c);">Heurística Não Admissível (h4)</h3>
+    <div class="images-grid">
+      <div class="img-card" onclick="openLightbox(this)">
+        <div class="svg-container"><svg width="100%" height="100%" data-w="2010pt" data-h="679pt"
+ viewBox="0.00 0.00 2010.00 679.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 674.98)">
+<title>ArvoreBuscaAStar</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-674.98 2006.45,-674.98 2006.45,4 -4,4"/>
+<text xml:space="preserve" text-anchor="middle" x="1001.23" y="-655.58" font-family="Arial" font-size="12.00">Arvore focada compactada: mostra o caminho escolhido e algumas alternativas imediatas. Ramos omitidos sao limite visual, nao poda do A*.</text>
+<g id="clust1" class="cluster">
+<title>cluster_legend</title>
+<polygon fill="none" stroke="#cccccc" points="835.45,-542.73 835.45,-640.73 1994.45,-640.73 1994.45,-542.73 835.45,-542.73"/>
+<text xml:space="preserve" text-anchor="middle" x="1414.95" y="-626.28" font-family="Arial" font-size="11.00">Legenda</text>
+</g>
+<!-- S1 -->
+<g id="node1" class="node">
+<title>S1</title>
+<ellipse fill="#dbeafe" stroke="black" cx="727.45" cy="-580.98" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="727.45" y="-589.48" font-family="Arial" font-size="10.00">C10</text>
+<text xml:space="preserve" text-anchor="middle" x="727.45" y="-577.48" font-family="Arial" font-size="10.00">g=2,00 h=98,26 f=100,26</text>
+<text xml:space="preserve" text-anchor="middle" x="727.45" y="-565.48" font-family="Arial" font-size="10.00">b=98% coletas=1</text>
+</g>
+<!-- S2 -->
+<g id="node2" class="node">
+<title>S2</title>
+<ellipse fill="#dbeafe" stroke="black" cx="304.45" cy="-449.76" rx="95.64" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="304.45" y="-458.26" font-family="Arial" font-size="10.00">R6</text>
+<text xml:space="preserve" text-anchor="middle" x="304.45" y="-446.26" font-family="Arial" font-size="10.00">g=16,00 h=101,63 f=117,63</text>
+<text xml:space="preserve" text-anchor="middle" x="304.45" y="-434.26" font-family="Arial" font-size="10.00">b=84% coletas=1</text>
+</g>
+<!-- S1&#45;&gt;S2 -->
+<g id="edge1" class="edge">
+<title>S1&#45;&gt;S2</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M661.36,-559.79C586.77,-537.01 465.41,-499.93 385.25,-475.44"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="386.72,-472.23 376.13,-472.66 384.68,-478.93 386.72,-472.23"/>
+<text xml:space="preserve" text-anchor="middle" x="561.16" y="-517.32" font-family="Arial" font-size="9.00">escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="561.16" y="-506.82" font-family="Arial" font-size="9.00">14</text>
+</g>
+<!-- S6 -->
+<g id="node6" class="node">
+<title>S6</title>
+<ellipse fill="#e5e7eb" stroke="black" stroke-dasharray="5,2" cx="515.45" cy="-449.76" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="515.45" y="-458.26" font-family="Arial" font-size="10.00">C4</text>
+<text xml:space="preserve" text-anchor="middle" x="515.45" y="-446.26" font-family="Arial" font-size="10.00">g=30,00 h=10,00 f=40,00</text>
+<text xml:space="preserve" text-anchor="middle" x="515.45" y="-434.26" font-family="Arial" font-size="10.00">b=70% coletas=2</text>
+</g>
+<!-- S1&#45;&gt;S6 -->
+<g id="edge5" class="edge">
+<title>S1&#45;&gt;S6</title>
+<path fill="none" stroke="#9ca3af" d="M684.04,-553.52C650.6,-533.14 604.21,-504.86 568.56,-483.13"/>
+<polygon fill="#9ca3af" stroke="#9ca3af" points="570.46,-480.19 560.1,-477.97 566.82,-486.17 570.46,-480.19"/>
+<text xml:space="preserve" text-anchor="middle" x="656.65" y="-517.32" font-family="Arial" font-size="9.00">opcao</text>
+<text xml:space="preserve" text-anchor="middle" x="656.65" y="-506.82" font-family="Arial" font-size="9.00">26 + coleta</text>
+</g>
+<!-- A1 -->
+<g id="node7" class="node">
+<title>A1</title>
+<ellipse fill="white" stroke="black" cx="727.45" cy="-449.76" rx="96.17" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="727.45" y="-458.26" font-family="Arial" font-size="10.00">C9</text>
+<text xml:space="preserve" text-anchor="middle" x="727.45" y="-446.26" font-family="Arial" font-size="10.00">g=35,00 h=108,99 f=143,99</text>
+<text xml:space="preserve" text-anchor="middle" x="727.45" y="-434.26" font-family="Arial" font-size="10.00">b=65% coletas=2</text>
+</g>
+<!-- S1&#45;&gt;A1 -->
+<g id="edge6" class="edge">
+<title>S1&#45;&gt;A1</title>
+<path fill="none" stroke="#9ca3af" d="M727.45,-549.69C727.45,-532.72 727.45,-511.3 727.45,-492.73"/>
+<polygon fill="#9ca3af" stroke="#9ca3af" points="730.95,-492.83 727.45,-482.83 723.95,-492.83 730.95,-492.83"/>
+<text xml:space="preserve" text-anchor="middle" x="749.95" y="-517.32" font-family="Arial" font-size="9.00">opcao</text>
+<text xml:space="preserve" text-anchor="middle" x="749.95" y="-506.82" font-family="Arial" font-size="9.00">31 + coleta</text>
+</g>
+<!-- A2 -->
+<g id="node8" class="node">
+<title>A2</title>
+<ellipse fill="white" stroke="black" cx="946.45" cy="-449.76" rx="96.17" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="946.45" y="-458.26" font-family="Arial" font-size="10.00">C11</text>
+<text xml:space="preserve" text-anchor="middle" x="946.45" y="-446.26" font-family="Arial" font-size="10.00">g=24,00 h=136,19 f=160,19</text>
+<text xml:space="preserve" text-anchor="middle" x="946.45" y="-434.26" font-family="Arial" font-size="10.00">b=76% coletas=2</text>
+</g>
+<!-- S1&#45;&gt;A2 -->
+<g id="edge7" class="edge">
+<title>S1&#45;&gt;A2</title>
+<path fill="none" stroke="#9ca3af" d="M772.04,-553.68C806.59,-533.29 854.65,-504.93 891.57,-483.15"/>
+<polygon fill="#9ca3af" stroke="#9ca3af" points="893.05,-486.34 899.88,-478.24 889.49,-480.31 893.05,-486.34"/>
+<text xml:space="preserve" text-anchor="middle" x="872.57" y="-517.32" font-family="Arial" font-size="9.00">opcao</text>
+<text xml:space="preserve" text-anchor="middle" x="872.57" y="-506.82" font-family="Arial" font-size="9.00">20 + coleta</text>
+</g>
+<!-- P1 -->
+<g id="node9" class="node">
+<title>P1</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="1181.45,-477.76 1069.45,-477.76 1069.45,-421.76 1181.45,-421.76 1181.45,-477.76"/>
+<text xml:space="preserve" text-anchor="middle" x="1125.45" y="-464.26" font-family="Arial" font-size="10.00" fill="#92400e">+1 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="1125.45" y="-452.26" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="1125.45" y="-440.26" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="1125.45" y="-428.26" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- S1&#45;&gt;P1 -->
+<g id="edge8" class="edge">
+<title>S1&#45;&gt;P1</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M786.11,-557.2C800.2,-552.11 815.27,-546.97 829.45,-542.73 860.95,-533.33 869.66,-534.2 901.45,-525.87 970.84,-507.69 989,-505.27 1056.45,-480.87 1060.63,-479.36 1064.92,-477.72 1069.21,-476.01"/>
+</g>
+<!-- S3 -->
+<g id="node3" class="node">
+<title>S3</title>
+<ellipse fill="#dbeafe" stroke="black" cx="304.45" cy="-318.53" rx="91.39" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="304.45" y="-327.03" font-family="Arial" font-size="10.00">C6</text>
+<text xml:space="preserve" text-anchor="middle" x="304.45" y="-315.03" font-family="Arial" font-size="10.00">g=31,00 h=80,00 f=111,00</text>
+<text xml:space="preserve" text-anchor="middle" x="304.45" y="-303.03" font-family="Arial" font-size="10.00">b=69% coletas=2</text>
+</g>
+<!-- S2&#45;&gt;S3 -->
+<g id="edge2" class="edge">
+<title>S2&#45;&gt;S3</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M304.45,-418.46C304.45,-401.97 304.45,-381.29 304.45,-363.1"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="307.95,-363.12 304.45,-353.12 300.95,-363.12 307.95,-363.12"/>
+<text xml:space="preserve" text-anchor="middle" x="326.95" y="-386.1" font-family="Arial" font-size="9.00">escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="326.95" y="-375.6" font-family="Arial" font-size="9.00">13 + coleta</text>
+</g>
+<!-- S4 -->
+<g id="node4" class="node">
+<title>S4</title>
+<ellipse fill="#dbeafe" stroke="black" cx="92.45" cy="-187.31" rx="92.45" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-195.81" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-183.81" font-family="Arial" font-size="10.00">g=49,00 h=91,63 f=140,63</text>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-171.81" font-family="Arial" font-size="10.00">b=51% coletas=2</text>
+</g>
+<!-- S3&#45;&gt;S4 -->
+<g id="edge3" class="edge">
+<title>S3&#45;&gt;S4</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M260.78,-290.92C227.97,-270.91 182.8,-243.38 147.51,-221.87"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="149.38,-218.91 139.02,-216.69 145.73,-224.88 149.38,-218.91"/>
+<text xml:space="preserve" text-anchor="middle" x="231.02" y="-254.87" font-family="Arial" font-size="9.00">escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="231.02" y="-244.37" font-family="Arial" font-size="9.00">18</text>
+</g>
+<!-- S7 -->
+<g id="node10" class="node">
+<title>S7</title>
+<ellipse fill="#e5e7eb" stroke="black" stroke-dasharray="5,2" cx="304.45" cy="-187.31" rx="92.45" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="304.45" y="-195.81" font-family="Arial" font-size="10.00">R6</text>
+<text xml:space="preserve" text-anchor="middle" x="304.45" y="-183.81" font-family="Arial" font-size="10.00">g=44,00 h=91,63 f=135,63</text>
+<text xml:space="preserve" text-anchor="middle" x="304.45" y="-171.81" font-family="Arial" font-size="10.00">b=56% coletas=2</text>
+</g>
+<!-- S3&#45;&gt;S7 -->
+<g id="edge9" class="edge">
+<title>S3&#45;&gt;S7</title>
+<path fill="none" stroke="#9ca3af" d="M304.45,-287.24C304.45,-270.27 304.45,-248.85 304.45,-230.28"/>
+<polygon fill="#9ca3af" stroke="#9ca3af" points="307.95,-230.38 304.45,-220.38 300.95,-230.38 307.95,-230.38"/>
+<text xml:space="preserve" text-anchor="middle" x="317.2" y="-254.87" font-family="Arial" font-size="9.00">opcao</text>
+<text xml:space="preserve" text-anchor="middle" x="317.2" y="-244.37" font-family="Arial" font-size="9.00">13</text>
+</g>
+<!-- A3 -->
+<g id="node11" class="node">
+<title>A3</title>
+<ellipse fill="white" stroke="black" cx="520.45" cy="-187.31" rx="96.17" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="520.45" y="-195.81" font-family="Arial" font-size="10.00">C7</text>
+<text xml:space="preserve" text-anchor="middle" x="520.45" y="-183.81" font-family="Arial" font-size="10.00">g=52,00 h=140,00 f=192,00</text>
+<text xml:space="preserve" text-anchor="middle" x="520.45" y="-171.81" font-family="Arial" font-size="10.00">b=48% coletas=3</text>
+</g>
+<!-- S3&#45;&gt;A3 -->
+<g id="edge10" class="edge">
+<title>S3&#45;&gt;A3</title>
+<path fill="none" stroke="#9ca3af" d="M348.95,-290.92C382.96,-270.57 430,-242.42 466.22,-220.76"/>
+<polygon fill="#9ca3af" stroke="#9ca3af" points="467.56,-224.03 474.35,-215.89 463.97,-218.02 467.56,-224.03"/>
+<text xml:space="preserve" text-anchor="middle" x="447.89" y="-254.87" font-family="Arial" font-size="9.00">opcao</text>
+<text xml:space="preserve" text-anchor="middle" x="447.89" y="-244.37" font-family="Arial" font-size="9.00">19 + coleta</text>
+</g>
+<!-- S5 -->
+<g id="node5" class="node">
+<title>S5</title>
+<ellipse fill="#b6f2b6" stroke="black" cx="92.45" cy="-43.6" rx="85.03" ry="39.6"/>
+<ellipse fill="none" stroke="black" cx="92.45" cy="-43.6" rx="89.03" ry="43.6"/>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-58.1" font-family="Arial" font-size="10.00">OBJETIVO</text>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-46.1" font-family="Arial" font-size="10.00">C4</text>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-34.1" font-family="Arial" font-size="10.00">g=68,00 h=0,00 f=68,00</text>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-22.1" font-family="Arial" font-size="10.00">b=32% coletas=3</text>
+</g>
+<!-- S4&#45;&gt;S5 -->
+<g id="edge4" class="edge">
+<title>S4&#45;&gt;S5</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M92.45,-155.91C92.45,-139.72 92.45,-119.29 92.45,-100.37"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="95.95,-100.61 92.45,-90.61 88.95,-100.61 95.95,-100.61"/>
+<text xml:space="preserve" text-anchor="middle" x="114.95" y="-123.65" font-family="Arial" font-size="9.00">escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="114.95" y="-113.15" font-family="Arial" font-size="9.00">17 + coleta</text>
+</g>
+<!-- legend_solution -->
+<g id="node12" class="node">
+<title>legend_solution</title>
+<polygon fill="#dbeafe" stroke="black" points="983.33,-598.98 843.58,-598.98 843.58,-562.98 983.33,-562.98 983.33,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="913.45" y="-582.93" font-family="Arial" font-size="9.00">Estado no caminho escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="913.45" y="-572.43" font-family="Arial" font-size="9.00">arestas azuis ligam a rota final</text>
+</g>
+<!-- legend_recharge -->
+<g id="node13" class="node">
+<title>legend_recharge</title>
+<polygon fill="#dcfce7" stroke="#059669" points="1148.95,-598.98 1009.95,-598.98 1009.95,-562.98 1148.95,-562.98 1148.95,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1079.45" y="-582.93" font-family="Arial" font-size="9.00">Acao de recarga executada</text>
+<text xml:space="preserve" text-anchor="middle" x="1079.45" y="-572.43" font-family="Arial" font-size="9.00">recarga tambem entra em g(s)</text>
+</g>
+<!-- legend_goal -->
+<g id="node14" class="node">
+<title>legend_goal</title>
+<polygon fill="#b6f2b6" stroke="black" points="1266.7,-598.98 1180.2,-598.98 1180.2,-562.98 1266.7,-562.98 1266.7,-598.98"/>
+<polygon fill="none" stroke="black" points="1270.7,-602.98 1176.2,-602.98 1176.2,-558.98 1270.7,-558.98 1270.7,-602.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1223.45" y="-577.68" font-family="Arial" font-size="9.00">Destino / objetivo</text>
+</g>
+<!-- legend_expanded -->
+<g id="node15" class="node">
+<title>legend_expanded</title>
+<polygon fill="#e5e7eb" stroke="black" points="1461.33,-598.98 1297.58,-598.98 1297.58,-562.98 1461.33,-562.98 1461.33,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1379.45" y="-582.93" font-family="Arial" font-size="9.00">Expandido / Closed</text>
+<text xml:space="preserve" text-anchor="middle" x="1379.45" y="-572.43" font-family="Arial" font-size="9.00">(filhos nao desenhados nesta visao)</text>
+</g>
+<!-- legend_open -->
+<g id="node16" class="node">
+<title>legend_open</title>
+<polygon fill="white" stroke="black" points="1634.33,-598.98 1488.58,-598.98 1488.58,-562.98 1634.33,-562.98 1634.33,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1561.45" y="-582.93" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<text xml:space="preserve" text-anchor="middle" x="1561.45" y="-572.43" font-family="Arial" font-size="9.00">candidato ainda nao expandido</text>
+</g>
+<!-- legend_alternative -->
+<g id="node17" class="node">
+<title>legend_alternative</title>
+<polygon fill="white" stroke="black" points="1769.58,-598.98 1661.33,-598.98 1661.33,-562.98 1769.58,-562.98 1769.58,-598.98"/>
+<text xml:space="preserve" text-anchor="middle" x="1715.45" y="-582.93" font-family="Arial" font-size="9.00">Alternativa desenhada</text>
+<text xml:space="preserve" text-anchor="middle" x="1715.45" y="-572.43" font-family="Arial" font-size="9.00">aresta cinza</text>
+</g>
+<!-- legend_pruned -->
+<g id="node18" class="node">
+<title>legend_pruned</title>
+<polygon fill="#fef3c7" stroke="black" points="1986.45,-611.23 1796.45,-611.23 1796.45,-550.73 1986.45,-550.73 1986.45,-611.23"/>
+<text xml:space="preserve" text-anchor="middle" x="1891.45" y="-598.68" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
+<text xml:space="preserve" text-anchor="middle" x="1891.45" y="-588.18" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
+<text xml:space="preserve" text-anchor="middle" x="1891.45" y="-577.68" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
+<text xml:space="preserve" text-anchor="middle" x="1891.45" y="-567.18" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
+<text xml:space="preserve" text-anchor="middle" x="1891.45" y="-556.68" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
+</g>
+</g>
+</svg></div>
+        <div class="img-title">Árvore Focada (h4)</div>
+        <div class="img-desc">Azul é o caminho escolhido. Verde é ação de recarga. Branco é nó gerado/Open. Cinza é nó expandido/Closed. Caixas amarelas indicam ramos ocultados apenas por limite visual.</div>
+      </div>
+      <div class="img-card" onclick="openLightbox(this)">
+        <div class="svg-container"><svg width="100%" height="100%" data-w="3060pt" data-h="646pt"
+ viewBox="0.00 0.00 3060.00 646.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 641.96)">
+<title>ArvoreBuscaCompleta</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-641.96 3056.45,-641.96 3056.45,4 -4,4"/>
+<text xml:space="preserve" text-anchor="middle" x="1526.23" y="-622.56" font-family="Arial" font-size="12.00">Arvore completa compactada por limite visual: estados omitidos existiram na execucao, mas nao foram desenhados para manter a figura legivel.</text>
+<g id="clust1" class="cluster">
+<title>cluster_legend</title>
+<polygon fill="none" stroke="#cccccc" points="1965.45,-509.71 1965.45,-607.71 3044.45,-607.71 3044.45,-509.71 1965.45,-509.71"/>
+<text xml:space="preserve" text-anchor="middle" x="2504.95" y="-593.26" font-family="Arial" font-size="11.00">Legenda</text>
+</g>
+<!-- N1 -->
+<g id="node1" class="node">
+<title>N1</title>
+<ellipse fill="#dbeafe" stroke="black" cx="1859.45" cy="-547.96" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1859.45" y="-556.46" font-family="Arial" font-size="10.00">C10</text>
+<text xml:space="preserve" text-anchor="middle" x="1859.45" y="-544.46" font-family="Arial" font-size="10.00">g=2,00 h=98,26 f=100,26</text>
+<text xml:space="preserve" text-anchor="middle" x="1859.45" y="-532.46" font-family="Arial" font-size="10.00">b=98% coletas=1</text>
+</g>
+<!-- N2 -->
+<g id="node2" class="node">
+<title>N2</title>
+<ellipse fill="#dbeafe" stroke="black" cx="1346.45" cy="-429.23" rx="95.64" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1346.45" y="-437.73" font-family="Arial" font-size="10.00">R6</text>
+<text xml:space="preserve" text-anchor="middle" x="1346.45" y="-425.73" font-family="Arial" font-size="10.00">g=16,00 h=101,63 f=117,63</text>
+<text xml:space="preserve" text-anchor="middle" x="1346.45" y="-413.73" font-family="Arial" font-size="10.00">b=84% coletas=1</text>
+</g>
+<!-- N1&#45;&gt;N2 -->
+<g id="edge1" class="edge">
+<title>N1&#45;&gt;N2</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M1785.68,-530.17C1693.42,-509.18 1535.55,-473.26 1436.33,-450.68"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="1437.4,-447.34 1426.88,-448.53 1435.85,-454.16 1437.4,-447.34"/>
+<text xml:space="preserve" text-anchor="middle" x="1623.59" y="-485.29" font-family="Arial" font-size="9.00">14</text>
+</g>
+<!-- N8 -->
+<g id="node9" class="node">
+<title>N8</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="1649.45" cy="-429.23" rx="88.74" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1649.45" y="-437.73" font-family="Arial" font-size="10.00">C4</text>
+<text xml:space="preserve" text-anchor="middle" x="1649.45" y="-425.73" font-family="Arial" font-size="10.00">g=30,00 h=10,00 f=40,00</text>
+<text xml:space="preserve" text-anchor="middle" x="1649.45" y="-413.73" font-family="Arial" font-size="10.00">b=70% coletas=2</text>
+</g>
+<!-- N1&#45;&gt;N8 -->
+<g id="edge8" class="edge">
+<title>N1&#45;&gt;N8</title>
+<path fill="none" stroke="#555555" d="M1812.85,-521.05C1781.17,-503.44 1739.11,-480.06 1705.59,-461.43"/>
+<polygon fill="#555555" stroke="#555555" points="1707.69,-458.6 1697.25,-456.8 1704.29,-464.72 1707.69,-458.6"/>
+<text xml:space="preserve" text-anchor="middle" x="1783.25" y="-485.29" font-family="Arial" font-size="9.00">26 + coleta</text>
+</g>
+<!-- N20 -->
+<g id="node26" class="node">
+<title>N20</title>
+<ellipse fill="white" stroke="black" cx="1859.45" cy="-429.23" rx="96.17" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1859.45" y="-437.73" font-family="Arial" font-size="10.00">C9</text>
+<text xml:space="preserve" text-anchor="middle" x="1859.45" y="-425.73" font-family="Arial" font-size="10.00">g=35,00 h=108,99 f=143,99</text>
+<text xml:space="preserve" text-anchor="middle" x="1859.45" y="-413.73" font-family="Arial" font-size="10.00">b=65% coletas=2</text>
+</g>
+<!-- N1&#45;&gt;N20 -->
+<g id="edge25" class="edge">
+<title>N1&#45;&gt;N20</title>
+<path fill="none" stroke="#555555" d="M1859.45,-516.59C1859.45,-502.95 1859.45,-486.63 1859.45,-471.86"/>
+<polygon fill="#555555" stroke="#555555" points="1862.95,-471.96 1859.45,-461.96 1855.95,-471.96 1862.95,-471.96"/>
+<text xml:space="preserve" text-anchor="middle" x="1881.95" y="-485.29" font-family="Arial" font-size="9.00">31 + coleta</text>
+</g>
+<!-- N21 -->
+<g id="node27" class="node">
+<title>N21</title>
+<ellipse fill="white" stroke="black" cx="2076.45" cy="-429.23" rx="96.17" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="2076.45" y="-437.73" font-family="Arial" font-size="10.00">C11</text>
+<text xml:space="preserve" text-anchor="middle" x="2076.45" y="-425.73" font-family="Arial" font-size="10.00">g=24,00 h=136,19 f=160,19</text>
+<text xml:space="preserve" text-anchor="middle" x="2076.45" y="-413.73" font-family="Arial" font-size="10.00">b=76% coletas=2</text>
+</g>
+<!-- N1&#45;&gt;N21 -->
+<g id="edge26" class="edge">
+<title>N1&#45;&gt;N21</title>
+<path fill="none" stroke="#555555" d="M1907.08,-521.34C1939.67,-503.81 1983.09,-480.45 2017.81,-461.78"/>
+<polygon fill="#555555" stroke="#555555" points="2019.34,-464.93 2026.48,-457.11 2016.02,-458.76 2019.34,-464.93"/>
+<text xml:space="preserve" text-anchor="middle" x="1996.96" y="-485.29" font-family="Arial" font-size="9.00">20 + coleta</text>
+</g>
+<!-- X7 -->
+<g id="node28" class="node">
+<title>X7</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="2309.45,-457.23 2197.45,-457.23 2197.45,-401.23 2309.45,-401.23 2309.45,-457.23"/>
+<text xml:space="preserve" text-anchor="middle" x="2253.45" y="-443.73" font-family="Arial" font-size="10.00" fill="#92400e">+1 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="2253.45" y="-431.73" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="2253.45" y="-419.73" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="2253.45" y="-407.73" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N1&#45;&gt;X7 -->
+<g id="edge27" class="edge">
+<title>N1&#45;&gt;X7</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M1917.15,-523.88C1930.89,-518.83 1945.59,-513.78 1959.45,-509.71 2008.78,-495.21 2136.59,-476.32 2185.45,-460.34 2189.26,-459.1 2193.14,-457.71 2197.02,-456.24"/>
+</g>
+<!-- N3 -->
+<g id="node3" class="node">
+<title>N3</title>
+<ellipse fill="#dbeafe" stroke="black" cx="453.45" cy="-310.5" rx="91.39" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="453.45" y="-319" font-family="Arial" font-size="10.00">C6</text>
+<text xml:space="preserve" text-anchor="middle" x="453.45" y="-307" font-family="Arial" font-size="10.00">g=31,00 h=80,00 f=111,00</text>
+<text xml:space="preserve" text-anchor="middle" x="453.45" y="-295" font-family="Arial" font-size="10.00">b=69% coletas=2</text>
+</g>
+<!-- N2&#45;&gt;N3 -->
+<g id="edge2" class="edge">
+<title>N2&#45;&gt;N3</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M1258.39,-416.72C1090.54,-394.78 726,-347.13 551.02,-324.26"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="551.62,-320.81 541.25,-322.98 550.71,-327.75 551.62,-320.81"/>
+<text xml:space="preserve" text-anchor="middle" x="949.23" y="-366.57" font-family="Arial" font-size="9.00">13 + coleta</text>
+</g>
+<!-- N4 -->
+<g id="node4" class="node">
+<title>N4</title>
+<ellipse fill="#dbeafe" stroke="black" cx="92.45" cy="-183.29" rx="92.45" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-191.79" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-179.79" font-family="Arial" font-size="10.00">g=49,00 h=91,63 f=140,63</text>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-167.79" font-family="Arial" font-size="10.00">b=51% coletas=2</text>
+</g>
+<!-- N3&#45;&gt;N4 -->
+<g id="edge3" class="edge">
+<title>N3&#45;&gt;N4</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M388.85,-288.16C337,-270.91 262.38,-245.81 197.45,-222.89 187.07,-219.23 176.15,-215.3 165.42,-211.39"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="166.87,-208.2 156.28,-208.05 164.47,-214.77 166.87,-208.2"/>
+<text xml:space="preserve" text-anchor="middle" x="294" y="-247.84" font-family="Arial" font-size="9.00">18</text>
+</g>
+<!-- N6 -->
+<g id="node6" class="node">
+<title>N6</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="302.45" cy="-183.29" rx="92.45" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="302.45" y="-191.79" font-family="Arial" font-size="10.00">R6</text>
+<text xml:space="preserve" text-anchor="middle" x="302.45" y="-179.79" font-family="Arial" font-size="10.00">g=44,00 h=91,63 f=135,63</text>
+<text xml:space="preserve" text-anchor="middle" x="302.45" y="-167.79" font-family="Arial" font-size="10.00">b=56% coletas=2</text>
+</g>
+<!-- N3&#45;&gt;N6 -->
+<g id="edge5" class="edge">
+<title>N3&#45;&gt;N6</title>
+<path fill="none" stroke="#555555" d="M419.57,-281.4C397.59,-263.18 368.78,-239.29 345.23,-219.77"/>
+<polygon fill="#555555" stroke="#555555" points="347.59,-217.17 337.65,-213.48 343.12,-222.56 347.59,-217.17"/>
+<text xml:space="preserve" text-anchor="middle" x="392.24" y="-247.84" font-family="Arial" font-size="9.00">13</text>
+</g>
+<!-- N7 -->
+<g id="node8" class="node">
+<title>N7</title>
+<ellipse fill="white" stroke="black" cx="516.45" cy="-183.29" rx="96.17" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="516.45" y="-191.79" font-family="Arial" font-size="10.00">C7</text>
+<text xml:space="preserve" text-anchor="middle" x="516.45" y="-179.79" font-family="Arial" font-size="10.00">g=52,00 h=140,00 f=192,00</text>
+<text xml:space="preserve" text-anchor="middle" x="516.45" y="-167.79" font-family="Arial" font-size="10.00">b=48% coletas=3</text>
+</g>
+<!-- N3&#45;&gt;N7 -->
+<g id="edge7" class="edge">
+<title>N3&#45;&gt;N7</title>
+<path fill="none" stroke="#555555" d="M468.54,-279.51C476.82,-263.06 487.2,-242.44 496.17,-224.6"/>
+<polygon fill="#555555" stroke="#555555" points="499.22,-226.33 500.59,-215.83 492.97,-223.19 499.22,-226.33"/>
+<text xml:space="preserve" text-anchor="middle" x="507.45" y="-247.84" font-family="Arial" font-size="9.00">19 + coleta</text>
+</g>
+<!-- N5 -->
+<g id="node5" class="node">
+<title>N5</title>
+<ellipse fill="#b6f2b6" stroke="black" cx="92.45" cy="-43.6" rx="85.03" ry="39.6"/>
+<ellipse fill="none" stroke="black" cx="92.45" cy="-43.6" rx="89.03" ry="43.6"/>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-58.1" font-family="Arial" font-size="10.00">OBJETIVO</text>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-46.1" font-family="Arial" font-size="10.00">C4</text>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-34.1" font-family="Arial" font-size="10.00">g=68,00 h=0,00 f=68,00</text>
+<text xml:space="preserve" text-anchor="middle" x="92.45" y="-22.1" font-family="Arial" font-size="10.00">b=32% coletas=3</text>
+</g>
+<!-- N4&#45;&gt;N5 -->
+<g id="edge4" class="edge">
+<title>N4&#45;&gt;N5</title>
+<path fill="none" stroke="#2563eb" stroke-data-w="2" d="M92.45,-151.73C92.45,-136.63 92.45,-117.93 92.45,-100.4"/>
+<polygon fill="#2563eb" stroke="#2563eb" stroke-data-w="2" points="95.95,-100.63 92.45,-90.63 88.95,-100.63 95.95,-100.63"/>
+<text xml:space="preserve" text-anchor="middle" x="114.95" y="-112.15" font-family="Arial" font-size="9.00">17 + coleta</text>
+</g>
+<!-- X1 -->
+<g id="node7" class="node">
+<title>X1</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="358.45,-71.6 246.45,-71.6 246.45,-15.6 358.45,-15.6 358.45,-71.6"/>
+<text xml:space="preserve" text-anchor="middle" x="302.45" y="-58.1" font-family="Arial" font-size="10.00" fill="#92400e">+2 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="302.45" y="-46.1" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="302.45" y="-34.1" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="302.45" y="-22.1" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N6&#45;&gt;X1 -->
+<g id="edge6" class="edge">
+<title>N6&#45;&gt;X1</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M302.45,-151.73C302.45,-127.81 302.45,-94.83 302.45,-71.81"/>
+</g>
+<!-- N9 -->
+<g id="node10" class="node">
+<title>N9</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="1255.45" cy="-310.5" rx="92.45" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1255.45" y="-319" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="1255.45" y="-307" font-family="Arial" font-size="10.00">g=47,00 h=91,63 f=138,63</text>
+<text xml:space="preserve" text-anchor="middle" x="1255.45" y="-295" font-family="Arial" font-size="10.00">b=53% coletas=2</text>
+</g>
+<!-- N8&#45;&gt;N9 -->
+<g id="edge9" class="edge">
+<title>N8&#45;&gt;N9</title>
+<path fill="none" stroke="#555555" d="M1582.62,-408.43C1514.12,-388.14 1407.62,-356.59 1334.87,-335.03"/>
+<polygon fill="#555555" stroke="#555555" points="1335.98,-331.71 1325.39,-332.22 1333.99,-338.42 1335.98,-331.71"/>
+<text xml:space="preserve" text-anchor="middle" x="1469.52" y="-366.57" font-family="Arial" font-size="9.00">17</text>
+</g>
+<!-- N14 -->
+<g id="node19" class="node">
+<title>N14</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="1916.45" cy="-310.5" rx="92.45" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="1916.45" y="-319" font-family="Arial" font-size="10.00">R1</text>
+<text xml:space="preserve" text-anchor="middle" x="1916.45" y="-307" font-family="Arial" font-size="10.00">g=52,00 h=88,26 f=140,26</text>
+<text xml:space="preserve" text-anchor="middle" x="1916.45" y="-295" font-family="Arial" font-size="10.00">b=48% coletas=2</text>
+</g>
+<!-- N8&#45;&gt;N14 -->
+<g id="edge18" class="edge">
+<title>N8&#45;&gt;N14</title>
+<path fill="none" stroke="#555555" d="M1704.13,-404.33C1746.5,-385.8 1805.38,-360.06 1850.39,-340.39"/>
+<polygon fill="#555555" stroke="#555555" points="1851.79,-343.6 1859.55,-336.38 1848.98,-337.18 1851.79,-343.6"/>
+<text xml:space="preserve" text-anchor="middle" x="1796.21" y="-366.57" font-family="Arial" font-size="9.00">22</text>
+</g>
+<!-- N19 -->
+<g id="node25" class="node">
+<title>N19</title>
+<ellipse fill="white" stroke="black" cx="2126.45" cy="-310.5" rx="92.45" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="2126.45" y="-319" font-family="Arial" font-size="10.00">C10</text>
+<text xml:space="preserve" text-anchor="middle" x="2126.45" y="-307" font-family="Arial" font-size="10.00">g=56,00 h=88,26 f=144,26</text>
+<text xml:space="preserve" text-anchor="middle" x="2126.45" y="-295" font-family="Arial" font-size="10.00">b=44% coletas=2</text>
+</g>
+<!-- N8&#45;&gt;N19 -->
+<g id="edge24" class="edge">
+<title>N8&#45;&gt;N19</title>
+<path fill="none" stroke="#555555" d="M1714.97,-407.82C1726.74,-404.41 1738.92,-401.03 1750.45,-398.12 1869.73,-367.96 1902.02,-371.15 2021.45,-341.62 2029.87,-339.54 2038.62,-337.24 2047.33,-334.87"/>
+<polygon fill="#555555" stroke="#555555" points="2048.14,-338.28 2056.85,-332.24 2046.28,-331.53 2048.14,-338.28"/>
+<text xml:space="preserve" text-anchor="middle" x="1918.75" y="-366.57" font-family="Arial" font-size="9.00">26</text>
+</g>
+<!-- N10 -->
+<g id="node11" class="node">
+<title>N10</title>
+<ellipse fill="#e5e7eb" stroke="black" cx="730.45" cy="-183.29" rx="92.45" ry="31.11"/>
+<text xml:space="preserve" text-anchor="middle" x="730.45" y="-191.79" font-family="Arial" font-size="10.00">C6</text>
+<text xml:space="preserve" text-anchor="middle" x="730.45" y="-179.79" font-family="Arial" font-size="10.00">g=67,00 h=70,00 f=137,00</text>
+<text xml:space="preserve" text-anchor="middle" x="730.45" y="-167.79" font-family="Arial" font-size="10.00">b=33% coletas=3</text>
+</g>
+<!-- N9&#45;&gt;N10 -->
+<g id="edge10" class="edge">
+<title>N9&#45;&gt;N10</title>
+<path fill="none" stroke="#555555" d="M1172.88,-296.22C1087.55,-281.63 950.9,-255.82 835.45,-222.89 823.87,-219.59 811.74,-215.62 800,-211.5"/>
+<polygon fill="#555555" stroke="#555555" points="801.38,-208.28 790.79,-208.21 799.02,-214.87 801.38,-208.28"/>
+<text xml:space="preserve" text-anchor="middle" x="983.59" y="-247.84" font-family="Arial" font-size="9.00">18 + coleta</text>
+</g>
+<!-- N11 -->
+<g id="node13" class="node">
+<title>N11</title>
+<ellipse fill="#dcfce7" stroke="#059669" cx="940.45" cy="-183.29" rx="92.45" ry="39.6"/>
+<text xml:space="preserve" text-anchor="middle" x="940.45" y="-197.79" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="940.45" y="-185.79" font-family="Arial" font-size="10.00">g=48,00 h=91,63 f=139,63</text>
+<text xml:space="preserve" text-anchor="middle" x="940.45" y="-173.79" font-family="Arial" font-size="10.00">b=58% coletas=2</text>
+<text xml:space="preserve" text-anchor="middle" x="940.45" y="-161.79" font-family="Arial" font-size="10.00">recarga</text>
+</g>
+<!-- N9&#45;&gt;N11 -->
+<g id="edge12" class="edge">
+<title>N9&#45;&gt;N11</title>
+<path fill="none" stroke="#555555" d="M1196.57,-286.1C1146.14,-266.05 1073.12,-237.03 1017.94,-215.1"/>
+<polygon fill="#555555" stroke="#555555" points="1019.5,-211.95 1008.91,-211.51 1016.91,-218.45 1019.5,-211.95"/>
+<text xml:space="preserve" text-anchor="middle" x="1136.31" y="-247.84" font-family="Arial" font-size="9.00">recarga 1</text>
+</g>
+<!-- N12 -->
+<g id="node15" class="node">
+<title>N12</title>
+<ellipse fill="#dcfce7" stroke="#059669" cx="1150.45" cy="-183.29" rx="92.45" ry="39.6"/>
+<text xml:space="preserve" text-anchor="middle" x="1150.45" y="-197.79" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="1150.45" y="-185.79" font-family="Arial" font-size="10.00">g=48,40 h=91,63 f=140,03</text>
+<text xml:space="preserve" text-anchor="middle" x="1150.45" y="-173.79" font-family="Arial" font-size="10.00">b=60% coletas=2</text>
+<text xml:space="preserve" text-anchor="middle" x="1150.45" y="-161.79" font-family="Arial" font-size="10.00">recarga</text>
+</g>
+<!-- N9&#45;&gt;N12 -->
+<g id="edge14" class="edge">
+<title>N9&#45;&gt;N12</title>
+<path fill="none" stroke="#555555" d="M1230.84,-280.15C1218.24,-265.13 1202.63,-246.51 1188.53,-229.69"/>
+<polygon fill="#555555" stroke="#555555" points="1191.39,-227.66 1182.28,-222.25 1186.03,-232.16 1191.39,-227.66"/>
+<text xml:space="preserve" text-anchor="middle" x="1232.49" y="-247.84" font-family="Arial" font-size="9.00">recarga 1,4</text>
+</g>
+<!-- N13 -->
+<g id="node17" class="node">
+<title>N13</title>
+<ellipse fill="#dcfce7" stroke="#059669" cx="1360.45" cy="-183.29" rx="92.45" ry="39.6"/>
+<text xml:space="preserve" text-anchor="middle" x="1360.45" y="-197.79" font-family="Arial" font-size="10.00">R2</text>
+<text xml:space="preserve" text-anchor="middle" x="1360.45" y="-185.79" font-family="Arial" font-size="10.00">g=50,00 h=91,63 f=141,63</text>
+<text xml:space="preserve" text-anchor="middle" x="1360.45" y="-173.79" font-family="Arial" font-size="10.00">b=68% coletas=2</text>
+<text xml:space="preserve" text-anchor="middle" x="1360.45" y="-161.79" font-family="Arial" font-size="10.00">recarga</text>
+</g>
+<!-- N9&#45;&gt;N13 -->
+<g id="edge16" class="edge">
+<title>N9&#45;&gt;N13</title>
+<path fill="none" stroke="#555555" d="M1280.07,-280.15C1292.67,-265.13 1308.28,-246.51 1322.38,-229.69"/>
+<polygon fill="#555555" stroke="#555555" points="1324.88,-232.16 1328.62,-222.25 1319.52,-227.66 1324.88,-232.16"/>
+<text xml:space="preserve" text-anchor="middle" x="1327.45" y="-247.84" font-family="Arial" font-size="9.00">recarga 3</text>
+</g>
+<!-- X5 -->
+<g id="node18" class="node">
+<title>X5</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="1589.45,-211.29 1477.45,-211.29 1477.45,-155.29 1589.45,-155.29 1589.45,-211.29"/>
+<text xml:space="preserve" text-anchor="middle" x="1533.45" y="-197.79" font-family="Arial" font-size="10.00" fill="#92400e">+10 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="1533.45" y="-185.79" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="1533.45" y="-173.79" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="1533.45" y="-161.79" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N9&#45;&gt;X5 -->
+<g id="edge17" class="edge">
+<title>N9&#45;&gt;X5</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M1316.08,-286.82C1358.51,-270.39 1416.18,-246.92 1465.45,-222.89 1472.53,-219.44 1479.89,-215.57 1487.04,-211.65"/>
+</g>
+<!-- X2 -->
+<g id="node12" class="node">
+<title>X2</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="786.45,-71.6 674.45,-71.6 674.45,-15.6 786.45,-15.6 786.45,-71.6"/>
+<text xml:space="preserve" text-anchor="middle" x="730.45" y="-58.1" font-family="Arial" font-size="10.00" fill="#92400e">+3 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="730.45" y="-46.1" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="730.45" y="-34.1" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="730.45" y="-22.1" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N10&#45;&gt;X2 -->
+<g id="edge11" class="edge">
+<title>N10&#45;&gt;X2</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M730.45,-151.73C730.45,-127.81 730.45,-94.83 730.45,-71.81"/>
+</g>
+<!-- X3 -->
+<g id="node14" class="node">
+<title>X3</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="996.45,-71.6 884.45,-71.6 884.45,-15.6 996.45,-15.6 996.45,-71.6"/>
+<text xml:space="preserve" text-anchor="middle" x="940.45" y="-58.1" font-family="Arial" font-size="10.00" fill="#92400e">+2 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="940.45" y="-46.1" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="940.45" y="-34.1" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="940.45" y="-22.1" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N11&#45;&gt;X3 -->
+<g id="edge13" class="edge">
+<title>N11&#45;&gt;X3</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M940.45,-143.2C940.45,-120.46 940.45,-92.36 940.45,-71.98"/>
+</g>
+<!-- X4 -->
+<g id="node16" class="node">
+<title>X4</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="1206.45,-71.6 1094.45,-71.6 1094.45,-15.6 1206.45,-15.6 1206.45,-71.6"/>
+<text xml:space="preserve" text-anchor="middle" x="1150.45" y="-58.1" font-family="Arial" font-size="10.00" fill="#92400e">+2 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="1150.45" y="-46.1" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="1150.45" y="-34.1" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="1150.45" y="-22.1" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N12&#45;&gt;X4 -->
+<g id="edge15" class="edge">
+<title>N12&#45;&gt;X4</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M1150.45,-143.2C1150.45,-120.46 1150.45,-92.36 1150.45,-71.98"/>
+</g>
+<!-- N15 -->
+<g id="node20" class="node">
+<title>N15</title>
+<ellipse fill="#dcfce7" stroke="#059669" cx="1706.45" cy="-183.29" rx="92.45" ry="39.6"/>
+<text xml:space="preserve" text-anchor="middle" x="1706.45" y="-197.79" font-family="Arial" font-size="10.00">R1</text>
+<text xml:space="preserve" text-anchor="middle" x="1706.45" y="-185.79" font-family="Arial" font-size="10.00">g=54,60 h=88,26 f=142,86</text>
+<text xml:space="preserve" text-anchor="middle" x="1706.45" y="-173.79" font-family="Arial" font-size="10.00">b=61% coletas=2</text>
+<text xml:space="preserve" text-anchor="middle" x="1706.45" y="-161.79" font-family="Arial" font-size="10.00">recarga</text>
+</g>
+<!-- N14&#45;&gt;N15 -->
+<g id="edge19" class="edge">
+<title>N14&#45;&gt;N15</title>
+<path fill="none" stroke="#555555" d="M1871.92,-282.95C1842,-265.11 1802.15,-241.35 1769.06,-221.62"/>
+<polygon fill="#555555" stroke="#555555" points="1771.15,-218.8 1760.77,-216.68 1767.57,-224.81 1771.15,-218.8"/>
+<text xml:space="preserve" text-anchor="middle" x="1847.28" y="-247.84" font-family="Arial" font-size="9.00">recarga 2,6</text>
+</g>
+<!-- N16 -->
+<g id="node21" class="node">
+<title>N16</title>
+<ellipse fill="#dcfce7" stroke="#059669" cx="1916.45" cy="-183.29" rx="92.45" ry="39.6"/>
+<text xml:space="preserve" text-anchor="middle" x="1916.45" y="-197.79" font-family="Arial" font-size="10.00">R1</text>
+<text xml:space="preserve" text-anchor="middle" x="1916.45" y="-185.79" font-family="Arial" font-size="10.00">g=55,00 h=88,26 f=143,26</text>
+<text xml:space="preserve" text-anchor="middle" x="1916.45" y="-173.79" font-family="Arial" font-size="10.00">b=63% coletas=2</text>
+<text xml:space="preserve" text-anchor="middle" x="1916.45" y="-161.79" font-family="Arial" font-size="10.00">recarga</text>
+</g>
+<!-- N14&#45;&gt;N16 -->
+<g id="edge20" class="edge">
+<title>N14&#45;&gt;N16</title>
+<path fill="none" stroke="#555555" d="M1916.45,-279.19C1916.45,-265.81 1916.45,-249.72 1916.45,-234.62"/>
+<polygon fill="#555555" stroke="#555555" points="1919.95,-234.85 1916.45,-224.85 1912.95,-234.85 1919.95,-234.85"/>
+<text xml:space="preserve" text-anchor="middle" x="1935.95" y="-247.84" font-family="Arial" font-size="9.00">recarga 3</text>
+</g>
+<!-- N17 -->
+<g id="node22" class="node">
+<title>N17</title>
+<ellipse fill="#dcfce7" stroke="#059669" cx="2126.45" cy="-183.29" rx="92.45" ry="39.6"/>
+<text xml:space="preserve" text-anchor="middle" x="2126.45" y="-197.79" font-family="Arial" font-size="10.00">R1</text>
+<text xml:space="preserve" text-anchor="middle" x="2126.45" y="-185.79" font-family="Arial" font-size="10.00">g=60,00 h=88,26 f=148,26</text>
+<text xml:space="preserve" text-anchor="middle" x="2126.45" y="-173.79" font-family="Arial" font-size="10.00">b=88% coletas=2</text>
+<text xml:space="preserve" text-anchor="middle" x="2126.45" y="-161.79" font-family="Arial" font-size="10.00">recarga</text>
+</g>
+<!-- N14&#45;&gt;N17 -->
+<g id="edge21" class="edge">
+<title>N14&#45;&gt;N17</title>
+<path fill="none" stroke="#555555" d="M1960.99,-282.95C1990.91,-265.11 2030.75,-241.35 2063.85,-221.62"/>
+<polygon fill="#555555" stroke="#555555" points="2065.34,-224.81 2072.14,-216.68 2061.76,-218.8 2065.34,-224.81"/>
+<text xml:space="preserve" text-anchor="middle" x="2040.95" y="-247.84" font-family="Arial" font-size="9.00">recarga 8</text>
+</g>
+<!-- N18 -->
+<g id="node23" class="node">
+<title>N18</title>
+<ellipse fill="#dcfce7" stroke="#059669" cx="2336.45" cy="-183.29" rx="92.45" ry="39.6"/>
+<text xml:space="preserve" text-anchor="middle" x="2336.45" y="-197.79" font-family="Arial" font-size="10.00">R1</text>
+<text xml:space="preserve" text-anchor="middle" x="2336.45" y="-185.79" font-family="Arial" font-size="10.00">g=60,40 h=88,26 f=148,66</text>
+<text xml:space="preserve" text-anchor="middle" x="2336.45" y="-173.79" font-family="Arial" font-size="10.00">b=90% coletas=2</text>
+<text xml:space="preserve" text-anchor="middle" x="2336.45" y="-161.79" font-family="Arial" font-size="10.00">recarga</text>
+</g>
+<!-- N14&#45;&gt;N18 -->
+<g id="edge22" class="edge">
+<title>N14&#45;&gt;N18</title>
+<path fill="none" stroke="#555555" d="M1985.6,-289.5C1997.54,-286.09 2009.85,-282.62 2021.45,-279.39 2114.58,-253.51 2139.34,-252.15 2231.45,-222.89 2239.94,-220.2 2248.76,-217.23 2257.51,-214.17"/>
+<polygon fill="#555555" stroke="#555555" points="2258.45,-217.55 2266.71,-210.92 2256.11,-210.95 2258.45,-217.55"/>
+<text xml:space="preserve" text-anchor="middle" x="2175.07" y="-247.84" font-family="Arial" font-size="9.00">recarga 8,4</text>
+</g>
+<!-- X6 -->
+<g id="node24" class="node">
+<title>X6</title>
+<polygon fill="#fef3c7" stroke="#f59e0b" stroke-dasharray="5,2" points="2565.45,-211.29 2453.45,-211.29 2453.45,-155.29 2565.45,-155.29 2565.45,-211.29"/>
+<text xml:space="preserve" text-anchor="middle" x="2509.45" y="-197.79" font-family="Arial" font-size="10.00" fill="#92400e">+3 ramos omitidos</text>
+<text xml:space="preserve" text-anchor="middle" x="2509.45" y="-185.79" font-family="Arial" font-size="10.00" fill="#92400e">limite visual</text>
+<text xml:space="preserve" text-anchor="middle" x="2509.45" y="-173.79" font-family="Arial" font-size="10.00" fill="#92400e">(estados gerados,</text>
+<text xml:space="preserve" text-anchor="middle" x="2509.45" y="-161.79" font-family="Arial" font-size="10.00" fill="#92400e">mas nao desenhados)</text>
+</g>
+<!-- N14&#45;&gt;X6 -->
+<g id="edge23" class="edge">
+<title>N14&#45;&gt;X6</title>
+<path fill="none" stroke="#d97706" stroke-dasharray="5,2" d="M1983.29,-288.67C1995.88,-285.22 2009.01,-281.94 2021.45,-279.39 2205.97,-241.57 2263.17,-283.63 2441.45,-222.89 2449.93,-220 2458.56,-216.04 2466.7,-211.74"/>
+</g>
+<!-- legend_solution -->
+<g id="node29" class="node">
+<title>legend_solution</title>
+<polygon fill="#dbeafe" stroke="black" points="2113.33,-565.96 1973.58,-565.96 1973.58,-529.96 2113.33,-529.96 2113.33,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2043.45" y="-549.91" font-family="Arial" font-size="9.00">Estado no caminho escolhido</text>
+<text xml:space="preserve" text-anchor="middle" x="2043.45" y="-539.41" font-family="Arial" font-size="9.00">arestas azuis ligam a rota final</text>
+</g>
+<!-- legend_recharge -->
+<g id="node30" class="node">
+<title>legend_recharge</title>
+<polygon fill="#dcfce7" stroke="#059669" points="2276.95,-565.96 2137.95,-565.96 2137.95,-529.96 2276.95,-529.96 2276.95,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2207.45" y="-549.91" font-family="Arial" font-size="9.00">Acao de recarga executada</text>
+<text xml:space="preserve" text-anchor="middle" x="2207.45" y="-539.41" font-family="Arial" font-size="9.00">recarga tambem entra em g(s)</text>
+</g>
+<!-- legend_goal -->
+<g id="node31" class="node">
+<title>legend_goal</title>
+<polygon fill="#b6f2b6" stroke="black" points="2392.7,-565.96 2306.2,-565.96 2306.2,-529.96 2392.7,-529.96 2392.7,-565.96"/>
+<polygon fill="none" stroke="black" points="2396.7,-569.96 2302.2,-569.96 2302.2,-525.96 2396.7,-525.96 2396.7,-569.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2349.45" y="-544.66" font-family="Arial" font-size="9.00">Destino / objetivo</text>
+</g>
+<!-- legend_expanded -->
+<g id="node32" class="node">
+<title>legend_expanded</title>
+<polygon fill="#e5e7eb" stroke="black" points="2517.58,-565.96 2421.33,-565.96 2421.33,-529.96 2517.58,-529.96 2517.58,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2469.45" y="-544.66" font-family="Arial" font-size="9.00">Expandido / Closed</text>
+</g>
+<!-- legend_open -->
+<g id="node33" class="node">
+<title>legend_open</title>
+<polygon fill="white" stroke="black" points="2688.33,-565.96 2542.58,-565.96 2542.58,-529.96 2688.33,-529.96 2688.33,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2615.45" y="-549.91" font-family="Arial" font-size="9.00">Gerado / Open</text>
+<text xml:space="preserve" text-anchor="middle" x="2615.45" y="-539.41" font-family="Arial" font-size="9.00">candidato ainda nao expandido</text>
+</g>
+<!-- legend_alternative -->
+<g id="node34" class="node">
+<title>legend_alternative</title>
+<polygon fill="white" stroke="black" points="2821.58,-565.96 2713.33,-565.96 2713.33,-529.96 2821.58,-529.96 2821.58,-565.96"/>
+<text xml:space="preserve" text-anchor="middle" x="2767.45" y="-549.91" font-family="Arial" font-size="9.00">Alternativa desenhada</text>
+<text xml:space="preserve" text-anchor="middle" x="2767.45" y="-539.41" font-family="Arial" font-size="9.00">aresta cinza</text>
+</g>
+<!-- legend_pruned -->
+<g id="node35" class="node">
+<title>legend_pruned</title>
+<polygon fill="#fef3c7" stroke="black" points="3036.45,-578.21 2846.45,-578.21 2846.45,-517.71 3036.45,-517.71 3036.45,-578.21"/>
+<text xml:space="preserve" text-anchor="middle" x="2941.45" y="-565.66" font-family="Arial" font-size="9.00">Ramos omitidos por limite visual:</text>
+<text xml:space="preserve" text-anchor="middle" x="2941.45" y="-555.16" font-family="Arial" font-size="9.00">estados gerados na execucao,</text>
+<text xml:space="preserve" text-anchor="middle" x="2941.45" y="-544.66" font-family="Arial" font-size="9.00">mas ocultados para evitar arvore ilegivel.</text>
+<text xml:space="preserve" text-anchor="middle" x="2941.45" y="-534.16" font-family="Arial" font-size="9.00">Nao e poda do algoritmo;</text>
+<text xml:space="preserve" text-anchor="middle" x="2941.45" y="-523.66" font-family="Arial" font-size="9.00">Open/Closed e metricas reais nao mudam.</text>
+</g>
+</g>
+</svg></div>
+        <div class="img-title">Árvore Completa Compactada (h4)</div>
+        <div class="img-desc">Mostra uma árvore compactada da h4. As caixas amarelas são estados gerados, mas não desenhados para manter a figura legível; não representam poda do A*.</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top: 60px;">Análise de Heurísticas (Admissível vs Não Admissível)</div>
+    <div class="panel">
+      <h3 style="font-size: 1.3rem; margin-bottom: 8px;">1. A Heurística Admissível (h5)</h3>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">No algoritmo A*, a função heurística h(s) tem o papel de estimar o custo restante entre o estado atual do agente e o objetivo final. Essa estimativa é usada junto ao custo real acumulado g(n), formando a função: <strong>f(s) = g(s) + h(s)</strong>.</p>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">No contexto deste trabalho, g(s) representa o tempo real já gasto até o estado atual, enquanto h(s) estima, de forma otimista, o tempo restante até concluir a missão. A heurística adotada como principal neste trabalho é a <strong>h5</strong>, que considera três componentes mínimos do custo restante:</p>
+      <div style="background: rgba(0,0,0,0.05); padding: 12px; border-radius: 6px; font-family: 'JetBrains Mono'; margin-bottom: 16px;">h5(s) = T_min_desloc(s) + T_min_coleta(s) + T_min_recarga(s)</div>
+      <p style="margin-bottom: 24px; color: var(--text-mut);">Ela é mais adequada ao problema porque leva em conta a bateria atual do agente e o número de coletas restantes, mas continua <strong>admissível</strong> por usar apenas estimativas otimistas (distância em linha reta, tempo mínimo sem desvios).</p>
+
+      <h3 style="font-size: 1.3rem; margin-bottom: 8px;">2. A Heurística Não Admissível (h4 - Inflada)</h3>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">Foi considerada uma heurística não admissível, chamada de heurística inflada: <code>h4(s) = α * h5(s)</code>. Neste caso, utilizamos α = 5. Essa heurística pode tornar a busca mais agressiva e reduzir o número de estados expandidos, mas pode superestimar o custo real restante. Por isso, <strong>ela não garante que o A* encontre o caminho ótimo</strong>.</p>
+      
+      <div class="split" style="margin-top: 24px;">
+        <div style="border: 1px solid var(--border); padding: 16px; border-radius: 8px;">
+          <h4 style="margin-bottom: 12px; color: var(--path);">Resultado h5 (Admissível)</h4>
+          <ul style="list-style: none; font-family: 'JetBrains Mono'; font-size: 0.9rem;">
+            <li>Estimativa Inicial h(start): <span id="h5-hstart"></span> min</li>
+            <li>Custo Total: <span id="h5-cost"></span> min</li>
+            <li>Estados Expandidos: <span id="h5-expanded"></span></li>
+            <li>Passos no Caminho: <span id="h5-path-len"></span></li>
+          </ul>
+        </div>
+        <div style="border: 1px solid var(--node-c); padding: 16px; border-radius: 8px; background: rgba(234, 88, 12, 0.05);">
+          <h4 style="margin-bottom: 12px; color: var(--node-c);">Resultado h4 (Não Admissível)</h4>
+          <ul style="list-style: none; font-family: 'JetBrains Mono'; font-size: 0.9rem;">
+            <li>Estimativa Inicial h(start): <span id="h4-hstart"></span> min</li>
+            <li>Custo Total: <span id="h4-cost"></span> min</li>
+            <li>Estados Expandidos: <span id="h4-expanded"></span></li>
+            <li>Passos no Caminho: <span id="h4-path-len"></span></li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top: 16px; color: var(--node-c); font-weight: bold; padding: 12px; border-left: 4px solid var(--node-c); background: rgba(234, 88, 12, 0.1);">
+        Note que se o custo da solução com h4 for maior que o de h5, fica provado empiricamente que a solução encontrada por h4 não é a ótima.
+      </p>
+
+      <h3 style="font-size: 1.3rem; margin-top: 40px; margin-bottom: 16px;">3. Histórico de Execução (Listas Open e Closed)</h3>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">Abaixo está a listagem de como as listas aberta (nós disponíveis para expansão) e fechada (nós já expandidos) evoluem. Para não sobrecarregar, estamos exibindo as últimas 10 interações que culminaram no fim da execução.</p>
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        <button class="btn" id="btn-hist-h5">Ver Histórico h5</button>
+        <button class="btn" id="btn-hist-h4" style="background: var(--node-c);">Ver Histórico h4</button>
+      </div>
+      
+      <div class="log-area" id="history-log" style="background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; border: 1px solid #333; height: 350px; white-space: pre-wrap;">
+        Selecione uma heurística acima para ver o passo a passo.
+      </div>
+
+      <h3 style="font-size: 1.3rem; margin-top: 40px; margin-bottom: 16px;">4. Possíveis Soluções e a Solução Escolhida pelo A*</h3>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">Durante a busca, o A* com a heurística admissível avalia várias rotas em potencial antes de cravar a melhor. A solução escolhida pelo algoritmo é sempre aquela que minimiza <strong>f(n) = g(n) + h(n)</strong>.</p>
+      <div id="topic4-container" style="background: var(--bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
+        <!-- Preenchido dinamicamente pelo JavaScript da pagina -->
+      </div>
+      
+      <h3 style="font-size: 1.3rem; margin-top: 40px; margin-bottom: 16px;">5. Dinâmica da Open List (Permanência de Estados)</h3>
+      <p style="margin-bottom: 12px; color: var(--text-mut);">Durante a execução, alguns estados foram gerados e permaneceram na Open List por vários passos antes de serem expandidos. Isso mostra que o A* não segue necessariamente o último estado gerado, mas sempre seleciona da Open List o estado com menor valor de f(n).</p>
+      <div class="log-area" id="revisited-log" style="background: rgba(5, 150, 105, 0.1); padding: 16px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; border: 1px solid var(--node-r); color: var(--node-r); white-space: pre-wrap;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Janela de ampliacao das imagens -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <div class="lb-close">&times;</div>
+    <div id="lb-content" style="width: 90vw; height: 90vh; display: flex; justify-content: center; align-items: center; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);"></div>
+  </div>
+
+<script>
+const NODES=[{"id":"C1","x":0,"y":5,"type":"collection"},{"id":"C4","x":3,"y":5,"type":"collection"},{"id":"C6","x":5,"y":5,"type":"collection"},{"id":"C7","x":7,"y":5,"type":"collection"},{"id":"C8","x":9,"y":5,"type":"collection"},{"id":"C9","x":1,"y":3,"type":"collection"},{"id":"C10","x":4,"y":3,"type":"collection"},{"id":"C11","x":6,"y":3,"type":"collection"},{"id":"C12","x":8,"y":3,"type":"collection"},{"id":"C13","x":3,"y":1,"type":"collection"},{"id":"C14","x":6,"y":1,"type":"collection"},{"id":"C5","x":10,"y":6.5,"type":"collection"},{"id":"C3","x":12,"y":7.2,"type":"collection"},{"id":"C2","x":14,"y":7.8,"type":"collection"},{"id":"R1","x":1,"y":6,"type":"recharge"},{"id":"R2","x":5,"y":6.2,"type":"recharge"},{"id":"R3","x":2,"y":2,"type":"recharge"},{"id":"R4","x":7,"y":1.5,"type":"recharge"},{"id":"R5","x":9.5,"y":4,"type":"recharge"},{"id":"R6","x":5,"y":3.8,"type":"recharge"},{"id":"R7","x":13,"y":6.2,"type":"recharge"}];
+const EDGES=[{"from":"C1","to":"R1","weight":18},{"from":"C1","to":"C9","weight":24},{"from":"C4","to":"R1","weight":22},{"from":"C4","to":"R2","weight":17},{"from":"C4","to":"C10","weight":26},{"from":"C6","to":"R2","weight":18},{"from":"C6","to":"C7","weight":19},{"from":"C6","to":"R6","weight":13},{"from":"C7","to":"R2","weight":25},{"from":"C7","to":"C8","weight":22},{"from":"C7","to":"C11","weight":25},{"from":"C8","to":"R5","weight":18},{"from":"C8","to":"C5","weight":20},{"from":"C9","to":"R3","weight":16},{"from":"C9","to":"C10","weight":31},{"from":"C10","to":"R6","weight":14},{"from":"C10","to":"C11","weight":20},{"from":"C10","to":"C13","weight":24},{"from":"C11","to":"R6","weight":17},{"from":"C11","to":"C12","weight":21},{"from":"C11","to":"C14","weight":28},{"from":"C12","to":"R5","weight":24},{"from":"C12","to":"R4","weight":19},{"from":"C13","to":"R3","weight":22},{"from":"C13","to":"C14","weight":30},{"from":"C14","to":"R4","weight":17},{"from":"C5","to":"C3","weight":23},{"from":"C3","to":"C2","weight":21},{"from":"C3","to":"R7","weight":12}];
+const PATH=[{"node":"C10","battery":98,"collected":"C10","numCollected":1,"action":"inicio","g":2.00,"h":19.65,"f":21.65,"h_desloc":15.65,"remaining":2,"h_coleta":4.00,"h_recarga":0.00},{"node":"R6","battery":84,"collected":"C10","numCollected":1,"action":"mover C10 -&gt; R6","g":16.00,"h":20.33,"f":36.33,"h_desloc":16.33,"remaining":2,"h_coleta":4.00,"h_recarga":0.00},{"node":"C6","battery":69,"collected":"C10,C6","numCollected":2,"action":"mover R6 -&gt; C6 e coletar em C6","g":31.00,"h":16.00,"f":47.00,"h_desloc":14.00,"remaining":1,"h_coleta":2.00,"h_recarga":0.00},{"node":"R2","battery":51,"collected":"C10,C6","numCollected":2,"action":"mover C6 -&gt; R2","g":49.00,"h":18.33,"f":67.33,"h_desloc":16.33,"remaining":1,"h_coleta":2.00,"h_recarga":0.00},{"node":"C4","battery":32,"collected":"C10,C4,C6","numCollected":3,"action":"mover R2 -&gt; C4 e coletar em C4","g":68.00,"h":0.00,"f":68.00,"h_desloc":0.00,"remaining":0,"h_coleta":0.00,"h_recarga":0.00}];
+const HEURISTIC_TABLE=[{"node":"C10","battery":98,"collected":"C10","numCollected":1,"action":"inicio","g":2.00,"h":19.65,"f":21.65,"h_desloc":15.65,"remaining":2,"h_coleta":4.00,"h_recarga":0.00},{"node":"R6","battery":84,"collected":"C10","numCollected":1,"action":"mover C10 -&gt; R6","g":16.00,"h":20.33,"f":36.33,"h_desloc":16.33,"remaining":2,"h_coleta":4.00,"h_recarga":0.00},{"node":"C6","battery":69,"collected":"C10,C6","numCollected":2,"action":"mover R6 -&gt; C6 e coletar em C6","g":31.00,"h":16.00,"f":47.00,"h_desloc":14.00,"remaining":1,"h_coleta":2.00,"h_recarga":0.00},{"node":"R2","battery":51,"collected":"C10,C6","numCollected":2,"action":"mover C6 -&gt; R2","g":49.00,"h":18.33,"f":67.33,"h_desloc":16.33,"remaining":1,"h_coleta":2.00,"h_recarga":0.00},{"node":"C4","battery":32,"collected":"C10,C4,C6","numCollected":3,"action":"mover R2 -&gt; C4 e coletar em C4","g":68.00,"h":0.00,"f":68.00,"h_desloc":0.00,"remaining":0,"h_coleta":0.00,"h_recarga":0.00}];
+const HEURISTIC_TABLE_H4=[{"node":"C10","battery":98,"collected":"C10","numCollected":1,"action":"inicio","g":2.00,"h":98.26,"f":100.26,"h_desloc":15.65,"remaining":2,"h_coleta":4.00,"h_recarga":0.00},{"node":"R6","battery":84,"collected":"C10","numCollected":1,"action":"mover C10 -&gt; R6","g":16.00,"h":101.63,"f":117.63,"h_desloc":16.33,"remaining":2,"h_coleta":4.00,"h_recarga":0.00},{"node":"C6","battery":69,"collected":"C10,C6","numCollected":2,"action":"mover R6 -&gt; C6 e coletar em C6","g":31.00,"h":80.00,"f":111.00,"h_desloc":14.00,"remaining":1,"h_coleta":2.00,"h_recarga":0.00},{"node":"R2","battery":51,"collected":"C10,C6","numCollected":2,"action":"mover C6 -&gt; R2","g":49.00,"h":91.63,"f":140.63,"h_desloc":16.33,"remaining":1,"h_coleta":2.00,"h_recarga":0.00},{"node":"C4","battery":32,"collected":"C10,C4,C6","numCollected":3,"action":"mover R2 -&gt; C4 e coletar em C4","g":68.00,"h":0.00,"f":68.00,"h_desloc":0.00,"remaining":0,"h_coleta":0.00,"h_recarga":0.00}];
+const TREE={"node": "C10", "battery": 98, "numCollected": 1, "g": 2.0, "h": 19.652475842498525, "f": 21.652475842498525, "action": "inicio", "isSolution": true, "isExpanded": true, "children": [{"node": "R6", "battery": 84, "numCollected": 1, "g": 16.0, "h": 20.32666530556684, "f": 36.32666530556684, "action": "mover C10 -> R6", "isSolution": true, "isExpanded": true, "children": [{"node": "C6", "battery": 69, "numCollected": 2, "g": 31.0, "h": 15.999999999999998, "f": 47.0, "action": "mover R6 -> C6 e coletar em C6", "isSolution": true, "isExpanded": true, "children": [{"node": "R2", "battery": 51, "numCollected": 2, "g": 49.0, "h": 18.32666530556684, "f": 67.32666530556685, "action": "mover C6 -> R2", "isSolution": true, "isExpanded": true, "children": [{"node": "C4", "battery": 32, "numCollected": 3, "g": 68.0, "h": 0.0, "f": 68.0, "action": "mover R2 -> C4 e coletar em C4", "isSolution": true, "isExpanded": true, "children": []}]}, {"node": "R6", "battery": 56, "numCollected": 2, "g": 44.0, "h": 18.32666530556684, "f": 62.32666530556684, "action": "mover C6 -> R6", "isSolution": false, "isExpanded": true, "children": []}, {"node": "C7", "battery": 48, "numCollected": 3, "g": 52.0, "h": 27.999999999999996, "f": 80.0, "action": "mover C6 -> C7 e coletar em C7", "isSolution": false, "isExpanded": false, "children": []}]}]}, {"node": "C4", "battery": 70, "numCollected": 2, "g": 30.0, "h": 2.0, "f": 32.0, "action": "mover C10 -> C4 e coletar em C4", "isSolution": false, "isExpanded": true, "children": []}, {"node": "C11", "battery": 76, "numCollected": 2, "g": 24.0, "h": 27.23885892824792, "f": 51.23885892824792, "action": "mover C10 -> C11 e coletar em C11", "isSolution": false, "isExpanded": true, "children": []}, {"node": "C9", "battery": 65, "numCollected": 2, "g": 35.0, "h": 21.79898987322333, "f": 56.798989873223334, "action": "mover C10 -> C9 e coletar em C9", "isSolution": false, "isExpanded": true, "children": []}]};
+const STATS={"success":true,"startNode":"C10","goalNode":"C4","hStart":19.65,"totalTime":68.00,"expandedStates":14,"openListSize":34,"closedListSize":14,"finalBattery":32,"finalCollected":3,"treeEdges":49};
+const PATH_H4=[{"node":"C10","battery":98,"collected":"C10","numCollected":1,"action":"inicio","g":2.00,"h":98.26,"f":100.26,"h_desloc":15.65,"remaining":2,"h_coleta":4.00,"h_recarga":0.00},{"node":"R6","battery":84,"collected":"C10","numCollected":1,"action":"mover C10 -&gt; R6","g":16.00,"h":101.63,"f":117.63,"h_desloc":16.33,"remaining":2,"h_coleta":4.00,"h_recarga":0.00},{"node":"C6","battery":69,"collected":"C10,C6","numCollected":2,"action":"mover R6 -&gt; C6 e coletar em C6","g":31.00,"h":80.00,"f":111.00,"h_desloc":14.00,"remaining":1,"h_coleta":2.00,"h_recarga":0.00},{"node":"R2","battery":51,"collected":"C10,C6","numCollected":2,"action":"mover C6 -&gt; R2","g":49.00,"h":91.63,"f":140.63,"h_desloc":16.33,"remaining":1,"h_coleta":2.00,"h_recarga":0.00},{"node":"C4","battery":32,"collected":"C10,C4,C6","numCollected":3,"action":"mover R2 -&gt; C4 e coletar em C4","g":68.00,"h":0.00,"f":68.00,"h_desloc":0.00,"remaining":0,"h_coleta":0.00,"h_recarga":0.00}];
+const STATS_H4={"success":true,"startNode":"C10","goalNode":"C4","hStart":98.26,"totalTime":68.00,"expandedStates":13,"openListSize":36,"closedListSize":13,"finalBattery":32,"finalCollected":3,"treeEdges":50};
+const HIST_H5={"open": [["(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0"], ["(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7"], ["(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0"], ["(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(R6, 56%, {C10,C6}) | g=44.0 h=18.3 f=62.3", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(R2, 51%, {C10,C6}) | g=49.0 h=18.3 f=67.3", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=28.0 f=80.0", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7"], ["(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(R6, 59%, {C10,C11}) | g=41.0 h=18.3 f=59.3", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7", "(C10, 56%, {C10,C11}) | g=44.0 h=17.7 f=61.7", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(R2, 51%, {C10,C6}) | g=49.0 h=18.3 f=67.3", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=28.0 f=80.0", "(C7, 49%, {C10,C11,C7}) | g=51.0 h=28.0 f=79.0", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(R6, 56%, {C10,C6}) | g=44.0 h=18.3 f=62.3", "(C12, 53%, {C10,C11,C12}) | g=47.0 h=37.7 f=84.7", "(C14, 46%, {C10,C11,C14}) | g=54.0 h=35.0 f=89.0"], ["(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(R6, 59%, {C10,C11}) | g=41.0 h=18.3 f=59.3", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7", "(C10, 56%, {C10,C11}) | g=44.0 h=17.7 f=61.7", "(C1, 39%, {C1,C10,C9}) | g=61.0 h=21.0 f=82.0", "(R2, 51%, {C10,C6}) | g=49.0 h=18.3 f=67.3", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=28.0 f=80.0", "(C7, 49%, {C10,C11,C7}) | g=51.0 h=28.0 f=79.0", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(R6, 56%, {C10,C6}) | g=44.0 h=18.3 f=62.3", "(C14, 46%, {C10,C11,C14}) | g=54.0 h=35.0 f=89.0", "(C12, 53%, {C10,C11,C12}) | g=47.0 h=37.7 f=84.7", "(R3, 49%, {C10,C9}) | g=51.0 h=24.1 f=75.1", "(C10, 34%, {C10,C9}) | g=66.0 h=17.7 f=83.7"], ["(R6, 59%, {C10,C11}) | g=41.0 h=18.3 f=59.3", "(C10, 56%, {C10,C11}) | g=44.0 h=17.7 f=61.7", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(C10, 48%, {C10,C13}) | g=52.0 h=17.7 f=69.7", "(R6, 56%, {C10,C6}) | g=44.0 h=18.3 f=62.3", "(C1, 39%, {C1,C10,C9}) | g=61.0 h=21.0 f=82.0", "(R2, 51%, {C10,C6}) | g=49.0 h=18.3 f=67.3", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7", "(C7, 49%, {C10,C11,C7}) | g=51.0 h=28.0 f=79.0", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(C10, 34%, {C10,C9}) | g=66.0 h=17.7 f=83.7", "(C14, 46%, {C10,C11,C14}) | g=54.0 h=35.0 f=89.0", "(C12, 53%, {C10,C11,C12}) | g=47.0 h=37.7 f=84.7", "(R3, 49%, {C10,C9}) | g=51.0 h=24.1 f=75.1", "(R3, 50%, {C10,C13}) | g=50.0 h=24.1 f=74.1", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=28.0 f=80.0", "(C14, 40%, {C10,C13,C14}) | g=60.0 h=35.0 f=95.0"], ["(C10, 56%, {C10,C11}) | g=44.0 h=17.7 f=61.7", "(R6, 56%, {C10,C6}) | g=44.0 h=18.3 f=62.3", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(C10, 48%, {C10,C13}) | g=52.0 h=17.7 f=69.7", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(C1, 39%, {C1,C10,C9}) | g=61.0 h=21.0 f=82.0", "(R2, 51%, {C10,C6}) | g=49.0 h=18.3 f=67.3", "(C6, 44%, {C10,C11,C6}) | g=56.0 h=14.0 f=70.0", "(C7, 49%, {C10,C11,C7}) | g=51.0 h=28.0 f=79.0", "(C14, 40%, {C10,C13,C14}) | g=60.0 h=35.0 f=95.0", "(C10, 34%, {C10,C9}) | g=66.0 h=17.7 f=83.7", "(C14, 46%, {C10,C11,C14}) | g=54.0 h=35.0 f=89.0", "(C12, 53%, {C10,C11,C12}) | g=47.0 h=37.7 f=84.7", "(R3, 49%, {C10,C9}) | g=51.0 h=24.1 f=75.1", "(R3, 50%, {C10,C13}) | g=50.0 h=24.1 f=74.1", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=28.0 f=80.0", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7"], ["(R6, 56%, {C10,C6}) | g=44.0 h=18.3 f=62.3", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(C10, 48%, {C10,C13}) | g=52.0 h=17.7 f=69.7", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7", "(C1, 39%, {C1,C10,C9}) | g=61.0 h=21.0 f=82.0", "(R2, 51%, {C10,C6}) | g=49.0 h=18.3 f=67.3", "(C6, 44%, {C10,C11,C6}) | g=56.0 h=14.0 f=70.0", "(C7, 49%, {C10,C11,C7}) | g=51.0 h=28.0 f=79.0", "(C14, 40%, {C10,C13,C14}) | g=60.0 h=35.0 f=95.0", "(C10, 34%, {C10,C9}) | g=66.0 h=17.7 f=83.7", "(C14, 46%, {C10,C11,C14}) | g=54.0 h=35.0 f=89.0", "(C12, 53%, {C10,C11,C12}) | g=47.0 h=37.7 f=84.7", "(R3, 49%, {C10,C9}) | g=51.0 h=24.1 f=75.1", "(R3, 50%, {C10,C13}) | g=50.0 h=24.1 f=74.1", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=28.0 f=80.0", "(C4, 28%, {C10,C11,C4}) | g=72.0 h=0.0 f=72.0", "(C9, 23%, {C10,C11,C9}) | g=77.0 h=19.8 f=96.8", "(C13, 30%, {C10,C11,C13}) | g=70.0 h=28.0 f=98.0"], ["(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(R2, 51%, {C10,C6}) | g=49.0 h=18.3 f=67.3", "(C10, 48%, {C10,C13}) | g=52.0 h=17.7 f=69.7", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7", "(C1, 39%, {C1,C10,C9}) | g=61.0 h=21.0 f=82.0", "(R3, 50%, {C10,C13}) | g=50.0 h=24.1 f=74.1", "(C6, 44%, {C10,C11,C6}) | g=56.0 h=14.0 f=70.0", "(C10, 42%, {C10,C6}) | g=58.0 h=17.7 f=75.7", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=25.2 f=88.2", "(C10, 34%, {C10,C9}) | g=66.0 h=17.7 f=83.7", "(C14, 46%, {C10,C11,C14}) | g=54.0 h=35.0 f=89.0", "(C12, 53%, {C10,C11,C12}) | g=47.0 h=37.7 f=84.7", "(R3, 49%, {C10,C9}) | g=51.0 h=24.1 f=75.1", "(C13, 30%, {C10,C11,C13}) | g=70.0 h=28.0 f=98.0", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=28.0 f=80.0", "(C4, 28%, {C10,C11,C4}) | g=72.0 h=0.0 f=72.0", "(C9, 23%, {C10,C11,C9}) | g=77.0 h=19.8 f=96.8", "(C7, 49%, {C10,C11,C7}) | g=51.0 h=28.0 f=79.0", "(C14, 40%, {C10,C13,C14}) | g=60.0 h=35.0 f=95.0"], ["(R2, 58%, {C10,C4}) | g=48.0 h=18.3 f=66.3", "(R2, 60%, {C10,C4}) | g=48.4 h=18.3 f=66.7", "(R2, 80%, {C10,C4}) | g=52.4 h=18.3 f=70.7", "(C10, 48%, {C10,C13}) | g=52.0 h=17.7 f=69.7", "(R2, 51%, {C10,C6}) | g=49.0 h=18.3 f=67.3", "(R2, 82%, {C10,C4}) | g=52.8 h=18.3 f=71.1", "(R2, 92%, {C10,C4}) | g=54.8 h=18.3 f=73.1", "(C6, 44%, {C10,C11,C6}) | g=56.0 h=14.0 f=70.0", "(C10, 42%, {C10,C6}) | g=58.0 h=17.7 f=75.7", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(R2, 68%, {C10,C4}) | g=50.0 h=18.3 f=68.3", "(R3, 50%, {C10,C13}) | g=50.0 h=24.1 f=74.1", "(R2, 83%, {C10,C4}) | g=53.0 h=18.3 f=71.3", "(R2, 93%, {C10,C4}) | g=55.0 h=18.3 f=73.3", "(R2, 98%, {C10,C4}) | g=56.0 h=18.3 f=74.3", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=28.0 f=80.0", "(C4, 28%, {C10,C11,C4}) | g=72.0 h=0.0 f=72.0", "(C9, 23%, {C10,C11,C9}) | g=77.0 h=19.8 f=96.8", "(C7, 49%, {C10,C11,C7}) | g=51.0 h=28.0 f=79.0", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=25.2 f=88.2", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7", "(C10, 34%, {C10,C9}) | g=66.0 h=17.7 f=83.7", "(R2, 70%, {C10,C4}) | g=50.4 h=18.3 f=68.7", "(C14, 46%, {C10,C11,C14}) | g=54.0 h=35.0 f=89.0", "(C1, 39%, {C1,C10,C9}) | g=61.0 h=21.0 f=82.0", "(C12, 53%, {C10,C11,C12}) | g=47.0 h=37.7 f=84.7", "(R2, 87%, {C10,C4}) | g=53.8 h=18.3 f=72.1", "(C14, 40%, {C10,C13,C14}) | g=60.0 h=35.0 f=95.0", "(R3, 49%, {C10,C9}) | g=51.0 h=24.1 f=75.1", "(C13, 30%, {C10,C11,C13}) | g=70.0 h=28.0 f=98.0", "(R2, 99%, {C10,C4}) | g=56.2 h=18.3 f=74.5", "(C6, 33%, {C10,C4,C6}) | g=67.0 h=14.0 f=81.0", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=28.6 f=102.6"], ["(R2, 60%, {C10,C4}) | g=48.4 h=18.3 f=66.7", "(R2, 51%, {C10,C6}) | g=49.0 h=18.3 f=67.3", "(R2, 80%, {C10,C4}) | g=52.4 h=18.3 f=70.7", "(C10, 48%, {C10,C13}) | g=52.0 h=17.7 f=69.7", "(R2, 68%, {C10,C4}) | g=50.0 h=18.3 f=68.3", "(R2, 82%, {C10,C4}) | g=52.8 h=18.3 f=71.1", "(R2, 92%, {C10,C4}) | g=54.8 h=18.3 f=73.1", "(C6, 44%, {C10,C11,C6}) | g=56.0 h=14.0 f=70.0", "(C10, 42%, {C10,C6}) | g=58.0 h=17.7 f=75.7", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(R2, 70%, {C10,C4}) | g=50.4 h=18.3 f=68.7", "(R3, 50%, {C10,C13}) | g=50.0 h=24.1 f=74.1", "(R2, 83%, {C10,C4}) | g=53.0 h=18.3 f=71.3", "(R2, 93%, {C10,C4}) | g=55.0 h=18.3 f=73.3", "(R2, 98%, {C10,C4}) | g=56.0 h=18.3 f=74.3", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=28.0 f=80.0", "(C4, 28%, {C10,C11,C4}) | g=72.0 h=0.0 f=72.0", "(C9, 23%, {C10,C11,C9}) | g=77.0 h=19.8 f=96.8", "(C7, 49%, {C10,C11,C7}) | g=51.0 h=28.0 f=79.0", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=25.2 f=88.2", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7", "(C10, 34%, {C10,C9}) | g=66.0 h=17.7 f=83.7", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=28.6 f=102.6", "(C14, 46%, {C10,C11,C14}) | g=54.0 h=35.0 f=89.0", "(C1, 39%, {C1,C10,C9}) | g=61.0 h=21.0 f=82.0", "(C12, 53%, {C10,C11,C12}) | g=47.0 h=37.7 f=84.7", "(R2, 87%, {C10,C4}) | g=53.8 h=18.3 f=72.1", "(C14, 40%, {C10,C13,C14}) | g=60.0 h=35.0 f=95.0", "(R3, 49%, {C10,C9}) | g=51.0 h=24.1 f=75.1", "(C13, 30%, {C10,C11,C13}) | g=70.0 h=28.0 f=98.0", "(R2, 99%, {C10,C4}) | g=56.2 h=18.3 f=74.5", "(C6, 33%, {C10,C4,C6}) | g=67.0 h=14.0 f=81.0", "(C6, 38%, {C10,C4,C6}) | g=68.0 h=14.0 f=82.0", "(C7, 31%, {C10,C4,C7}) | g=75.0 h=28.0 f=103.0"], ["(R2, 51%, {C10,C6}) | g=49.0 h=18.3 f=67.3", "(R2, 68%, {C10,C4}) | g=50.0 h=18.3 f=68.3", "(R2, 80%, {C10,C4}) | g=52.4 h=18.3 f=70.7", "(C10, 48%, {C10,C13}) | g=52.0 h=17.7 f=69.7", "(R2, 70%, {C10,C4}) | g=50.4 h=18.3 f=68.7", "(R2, 82%, {C10,C4}) | g=52.8 h=18.3 f=71.1", "(R2, 92%, {C10,C4}) | g=54.8 h=18.3 f=73.1", "(C6, 44%, {C10,C11,C6}) | g=56.0 h=14.0 f=70.0", "(C10, 42%, {C10,C6}) | g=58.0 h=17.7 f=75.7", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(C10, 34%, {C10,C9}) | g=66.0 h=17.7 f=83.7", "(R3, 50%, {C10,C13}) | g=50.0 h=24.1 f=74.1", "(R2, 83%, {C10,C4}) | g=53.0 h=18.3 f=71.3", "(R2, 93%, {C10,C4}) | g=55.0 h=18.3 f=73.3", "(R2, 98%, {C10,C4}) | g=56.0 h=18.3 f=74.3", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=28.0 f=80.0", "(C4, 28%, {C10,C11,C4}) | g=72.0 h=0.0 f=72.0", "(C9, 23%, {C10,C11,C9}) | g=77.0 h=19.8 f=96.8", "(C7, 49%, {C10,C11,C7}) | g=51.0 h=28.0 f=79.0", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=25.2 f=88.2", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7", "(C7, 31%, {C10,C4,C7}) | g=75.0 h=28.0 f=103.0", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=28.6 f=102.6", "(C14, 46%, {C10,C11,C14}) | g=54.0 h=35.0 f=89.0", "(C1, 39%, {C1,C10,C9}) | g=61.0 h=21.0 f=82.0", "(C12, 53%, {C10,C11,C12}) | g=47.0 h=37.7 f=84.7", "(R2, 87%, {C10,C4}) | g=53.8 h=18.3 f=72.1", "(C14, 40%, {C10,C13,C14}) | g=60.0 h=35.0 f=95.0", "(R3, 49%, {C10,C9}) | g=51.0 h=24.1 f=75.1", "(C13, 30%, {C10,C11,C13}) | g=70.0 h=28.0 f=98.0", "(R2, 99%, {C10,C4}) | g=56.2 h=18.3 f=74.5", "(C6, 33%, {C10,C4,C6}) | g=67.0 h=14.0 f=81.0", "(C6, 38%, {C10,C4,C6}) | g=68.0 h=14.0 f=82.0", "(C6, 40%, {C10,C4,C6}) | g=68.4 h=14.0 f=82.4", "(C7, 33%, {C10,C4,C7}) | g=75.4 h=28.0 f=103.4"], ["(C4, 32%, {C10,C4,C6}) | g=68.0 h=0.0 f=68.0", "(R2, 68%, {C10,C4}) | g=50.0 h=18.3 f=68.3", "(R2, 80%, {C10,C4}) | g=52.4 h=18.3 f=70.7", "(R2, 70%, {C10,C4}) | g=50.4 h=18.3 f=68.7", "(R1, 48%, {C10,C4}) | g=52.0 h=17.7 f=69.7", "(R2, 82%, {C10,C4}) | g=52.8 h=18.3 f=71.1", "(R2, 92%, {C10,C4}) | g=54.8 h=18.3 f=73.1", "(C10, 48%, {C10,C13}) | g=52.0 h=17.7 f=69.7", "(C10, 42%, {C10,C6}) | g=58.0 h=17.7 f=75.7", "(C10, 44%, {C10,C4}) | g=56.0 h=17.7 f=73.7", "(C10, 34%, {C10,C9}) | g=66.0 h=17.7 f=83.7", "(R3, 50%, {C10,C13}) | g=50.0 h=24.1 f=74.1", "(R2, 83%, {C10,C4}) | g=53.0 h=18.3 f=71.3", "(R2, 93%, {C10,C4}) | g=55.0 h=18.3 f=73.3", "(R2, 98%, {C10,C4}) | g=56.0 h=18.3 f=74.3", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=28.0 f=80.0", "(C6, 44%, {C10,C11,C6}) | g=56.0 h=14.0 f=70.0", "(C9, 23%, {C10,C11,C9}) | g=77.0 h=19.8 f=96.8", "(C7, 49%, {C10,C11,C7}) | g=51.0 h=28.0 f=79.0", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=25.2 f=88.2", "(C7, 33%, {C10,C4,C7}) | g=75.4 h=28.0 f=103.4", "(C7, 31%, {C10,C4,C7}) | g=75.0 h=28.0 f=103.0", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=28.6 f=102.6", "(C14, 46%, {C10,C11,C14}) | g=54.0 h=35.0 f=89.0", "(C1, 39%, {C1,C10,C9}) | g=61.0 h=21.0 f=82.0", "(C12, 53%, {C10,C11,C12}) | g=47.0 h=37.7 f=84.7", "(R2, 87%, {C10,C4}) | g=53.8 h=18.3 f=72.1", "(C14, 40%, {C10,C13,C14}) | g=60.0 h=35.0 f=95.0", "(R3, 49%, {C10,C9}) | g=51.0 h=24.1 f=75.1", "(C13, 30%, {C10,C11,C13}) | g=70.0 h=28.0 f=98.0", "(R2, 99%, {C10,C4}) | g=56.2 h=18.3 f=74.5", "(C6, 33%, {C10,C4,C6}) | g=67.0 h=14.0 f=81.0", "(C6, 38%, {C10,C4,C6}) | g=68.0 h=14.0 f=82.0", "(C6, 40%, {C10,C4,C6}) | g=68.4 h=14.0 f=82.4", "(C4, 28%, {C10,C11,C4}) | g=72.0 h=0.0 f=72.0"]], "closed": [["(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7"], ["(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0"], ["(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"], ["(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"], ["(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"], ["(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"], ["(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"], ["(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(R6, 59%, {C10,C11}) | g=41.0 h=18.3 f=59.3", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"], ["(C10, 56%, {C10,C11}) | g=44.0 h=17.7 f=61.7", "(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(R6, 59%, {C10,C11}) | g=41.0 h=18.3 f=59.3", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"], ["(C10, 56%, {C10,C11}) | g=44.0 h=17.7 f=61.7", "(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(R6, 56%, {C10,C6}) | g=44.0 h=18.3 f=62.3", "(R6, 59%, {C10,C11}) | g=41.0 h=18.3 f=59.3", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"], ["(C10, 56%, {C10,C11}) | g=44.0 h=17.7 f=61.7", "(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(R6, 56%, {C10,C6}) | g=44.0 h=18.3 f=62.3", "(R6, 59%, {C10,C11}) | g=41.0 h=18.3 f=59.3", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"], ["(C10, 56%, {C10,C11}) | g=44.0 h=17.7 f=61.7", "(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(R2, 58%, {C10,C4}) | g=48.0 h=18.3 f=66.3", "(R6, 56%, {C10,C6}) | g=44.0 h=18.3 f=62.3", "(R6, 59%, {C10,C11}) | g=41.0 h=18.3 f=59.3", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"], ["(C10, 56%, {C10,C11}) | g=44.0 h=17.7 f=61.7", "(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(R2, 58%, {C10,C4}) | g=48.0 h=18.3 f=66.3", "(R2, 60%, {C10,C4}) | g=48.4 h=18.3 f=66.7", "(R6, 56%, {C10,C6}) | g=44.0 h=18.3 f=62.3", "(R6, 59%, {C10,C11}) | g=41.0 h=18.3 f=59.3", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"], ["(C10, 56%, {C10,C11}) | g=44.0 h=17.7 f=61.7", "(C10, 98%, {C10}) | g=2.0 h=19.7 f=21.7", "(C11, 76%, {C10,C11}) | g=24.0 h=27.2 f=51.2", "(C13, 72%, {C10,C13}) | g=28.0 h=30.0 f=58.0", "(C4, 70%, {C10,C4}) | g=30.0 h=2.0 f=32.0", "(C6, 69%, {C10,C6}) | g=31.0 h=16.0 f=47.0", "(C9, 65%, {C10,C9}) | g=35.0 h=21.8 f=56.8", "(R2, 51%, {C10,C6}) | g=49.0 h=18.3 f=67.3", "(R2, 53%, {C10,C4}) | g=47.0 h=18.3 f=65.3", "(R2, 58%, {C10,C4}) | g=48.0 h=18.3 f=66.3", "(R2, 60%, {C10,C4}) | g=48.4 h=18.3 f=66.7", "(R6, 56%, {C10,C6}) | g=44.0 h=18.3 f=62.3", "(R6, 59%, {C10,C11}) | g=41.0 h=18.3 f=59.3", "(R6, 84%, {C10}) | g=16.0 h=20.3 f=36.3"]], "revisited": [], "expanded_later": [{"state": "(R6, 84%, {C10})", "added_step": 1, "expanded_step": 3, "g": 16.0}, {"state": "(C11, 76%, {C10,C11})", "added_step": 1, "expanded_step": 5, "g": 24.0}, {"state": "(C9, 65%, {C10,C9})", "added_step": 1, "expanded_step": 6, "g": 35.0}, {"state": "(C13, 72%, {C10,C13})", "added_step": 1, "expanded_step": 7, "g": 28.0}, {"state": "(R6, 59%, {C10,C11})", "added_step": 5, "expanded_step": 8, "g": 41.0}, {"state": "(C10, 56%, {C10,C11})", "added_step": 5, "expanded_step": 9, "g": 44.0}, {"state": "(R6, 56%, {C10,C6})", "added_step": 4, "expanded_step": 10, "g": 44.0}, {"state": "(R2, 53%, {C10,C4})", "added_step": 2, "expanded_step": 11, "g": 47.0}, {"state": "(R2, 60%, {C10,C4})", "added_step": 11, "expanded_step": 13, "g": 48.4}, {"state": "(R2, 51%, {C10,C6})", "added_step": 4, "expanded_step": 14, "g": 49.0}]};
+const HIST_H4={"open": [["(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0"], ["(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6", "(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3"], ["(C6, 69%, {C10,C6}) | g=31.0 h=80.0 f=111.0", "(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3"], ["(R6, 56%, {C10,C6}) | g=44.0 h=91.6 f=135.6", "(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(R2, 51%, {C10,C6}) | g=49.0 h=91.6 f=140.6", "(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=140.0 f=192.0", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2"], ["(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(R2, 51%, {C10,C6}) | g=49.0 h=91.6 f=140.6", "(C10, 42%, {C10,C6}) | g=58.0 h=88.3 f=146.3", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=140.0 f=192.0", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=126.2 f=189.2"], ["(C6, 33%, {C10,C4,C6}) | g=67.0 h=70.0 f=137.0", "(R2, 58%, {C10,C4}) | g=48.0 h=91.6 f=139.6", "(R2, 51%, {C10,C6}) | g=49.0 h=91.6 f=140.6", "(R2, 83%, {C10,C4}) | g=53.0 h=91.6 f=144.6", "(R2, 60%, {C10,C4}) | g=48.4 h=91.6 f=140.0", "(R2, 68%, {C10,C4}) | g=50.0 h=91.6 f=141.6", "(R2, 80%, {C10,C4}) | g=52.4 h=91.6 f=144.0", "(R2, 87%, {C10,C4}) | g=53.8 h=91.6 f=145.4", "(R2, 92%, {C10,C4}) | g=54.8 h=91.6 f=146.4", "(R2, 98%, {C10,C4}) | g=56.0 h=91.6 f=147.6", "(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0", "(R2, 70%, {C10,C4}) | g=50.4 h=91.6 f=142.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3", "(R2, 82%, {C10,C4}) | g=52.8 h=91.6 f=144.4", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=140.0 f=192.0", "(C10, 42%, {C10,C6}) | g=58.0 h=88.3 f=146.3", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(R2, 93%, {C10,C4}) | g=55.0 h=91.6 f=146.6", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=126.2 f=189.2", "(R2, 99%, {C10,C4}) | g=56.2 h=91.6 f=147.8", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=143.0 f=217.0"], ["(R2, 58%, {C10,C4}) | g=48.0 h=91.6 f=139.6", "(R2, 60%, {C10,C4}) | g=48.4 h=91.6 f=140.0", "(R2, 51%, {C10,C6}) | g=49.0 h=91.6 f=140.6", "(R2, 83%, {C10,C4}) | g=53.0 h=91.6 f=144.6", "(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(R2, 68%, {C10,C4}) | g=50.0 h=91.6 f=141.6", "(R2, 80%, {C10,C4}) | g=52.4 h=91.6 f=144.0", "(R2, 87%, {C10,C4}) | g=53.8 h=91.6 f=145.4", "(R2, 92%, {C10,C4}) | g=54.8 h=91.6 f=146.4", "(R2, 98%, {C10,C4}) | g=56.0 h=91.6 f=147.6", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(R6, 20%, {C10,C4,C6}) | g=80.0 h=81.6 f=161.6", "(R2, 70%, {C10,C4}) | g=50.4 h=91.6 f=142.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3", "(R2, 82%, {C10,C4}) | g=52.8 h=91.6 f=144.4", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=140.0 f=192.0", "(C10, 42%, {C10,C6}) | g=58.0 h=88.3 f=146.3", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(R2, 93%, {C10,C4}) | g=55.0 h=91.6 f=146.6", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=126.2 f=189.2", "(R2, 99%, {C10,C4}) | g=56.2 h=91.6 f=147.8", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=143.0 f=217.0", "(R2, 15%, {C10,C4,C6}) | g=85.0 h=84.0 f=169.0", "(C7, 14%, {C10,C4,C6}) | g=86.0 h=155.0 f=241.0", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0"], ["(C6, 38%, {C10,C4,C6}) | g=68.0 h=70.0 f=138.0", "(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(R2, 60%, {C10,C4}) | g=48.4 h=91.6 f=140.0", "(R2, 83%, {C10,C4}) | g=53.0 h=91.6 f=144.6", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(R2, 51%, {C10,C6}) | g=49.0 h=91.6 f=140.6", "(R2, 80%, {C10,C4}) | g=52.4 h=91.6 f=144.0", "(R2, 87%, {C10,C4}) | g=53.8 h=91.6 f=145.4", "(R2, 92%, {C10,C4}) | g=54.8 h=91.6 f=146.4", "(R2, 98%, {C10,C4}) | g=56.0 h=91.6 f=147.6", "(R2, 15%, {C10,C4,C6}) | g=85.0 h=84.0 f=169.0", "(R2, 68%, {C10,C4}) | g=50.0 h=91.6 f=141.6", "(R2, 70%, {C10,C4}) | g=50.4 h=91.6 f=142.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3", "(R2, 82%, {C10,C4}) | g=52.8 h=91.6 f=144.4", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=140.0 f=192.0", "(C10, 42%, {C10,C6}) | g=58.0 h=88.3 f=146.3", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(R2, 93%, {C10,C4}) | g=55.0 h=91.6 f=146.6", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=126.2 f=189.2", "(R2, 99%, {C10,C4}) | g=56.2 h=91.6 f=147.8", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=143.0 f=217.0", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0", "(C7, 14%, {C10,C4,C6}) | g=86.0 h=155.0 f=241.0", "(R6, 20%, {C10,C4,C6}) | g=80.0 h=81.6 f=161.6", "(C7, 31%, {C10,C4,C7}) | g=75.0 h=140.0 f=215.0"], ["(R2, 60%, {C10,C4}) | g=48.4 h=91.6 f=140.0", "(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(R2, 51%, {C10,C6}) | g=49.0 h=91.6 f=140.6", "(R2, 83%, {C10,C4}) | g=53.0 h=91.6 f=144.6", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(R2, 68%, {C10,C4}) | g=50.0 h=91.6 f=141.6", "(R2, 80%, {C10,C4}) | g=52.4 h=91.6 f=144.0", "(R2, 87%, {C10,C4}) | g=53.8 h=91.6 f=145.4", "(R2, 92%, {C10,C4}) | g=54.8 h=91.6 f=146.4", "(R2, 98%, {C10,C4}) | g=56.0 h=91.6 f=147.6", "(R2, 15%, {C10,C4,C6}) | g=85.0 h=84.0 f=169.0", "(R6, 20%, {C10,C4,C6}) | g=80.0 h=81.6 f=161.6", "(R2, 70%, {C10,C4}) | g=50.4 h=91.6 f=142.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3", "(R2, 82%, {C10,C4}) | g=52.8 h=91.6 f=144.4", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=140.0 f=192.0", "(C10, 42%, {C10,C6}) | g=58.0 h=88.3 f=146.3", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(R2, 93%, {C10,C4}) | g=55.0 h=91.6 f=146.6", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=126.2 f=189.2", "(R2, 99%, {C10,C4}) | g=56.2 h=91.6 f=147.8", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=143.0 f=217.0", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0", "(C7, 14%, {C10,C4,C6}) | g=86.0 h=155.0 f=241.0", "(C7, 31%, {C10,C4,C7}) | g=75.0 h=140.0 f=215.0", "(R2, 20%, {C10,C4,C6}) | g=86.0 h=81.6 f=167.6", "(C7, 19%, {C10,C4,C6}) | g=87.0 h=150.0 f=237.0", "(R6, 25%, {C10,C4,C6}) | g=81.0 h=81.6 f=162.6"], ["(C6, 40%, {C10,C4,C6}) | g=68.4 h=70.0 f=138.4", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(R2, 83%, {C10,C4}) | g=53.0 h=91.6 f=144.6", "(R2, 98%, {C10,C4}) | g=56.0 h=91.6 f=147.6", "(R2, 68%, {C10,C4}) | g=50.0 h=91.6 f=141.6", "(R2, 51%, {C10,C6}) | g=49.0 h=91.6 f=140.6", "(R2, 87%, {C10,C4}) | g=53.8 h=91.6 f=145.4", "(R2, 92%, {C10,C4}) | g=54.8 h=91.6 f=146.4", "(R2, 99%, {C10,C4}) | g=56.2 h=91.6 f=147.8", "(R2, 15%, {C10,C4,C6}) | g=85.0 h=84.0 f=169.0", "(R6, 20%, {C10,C4,C6}) | g=80.0 h=81.6 f=161.6", "(R2, 70%, {C10,C4}) | g=50.4 h=91.6 f=142.0", "(R2, 80%, {C10,C4}) | g=52.4 h=91.6 f=144.0", "(R2, 82%, {C10,C4}) | g=52.8 h=91.6 f=144.4", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=140.0 f=192.0", "(C10, 42%, {C10,C6}) | g=58.0 h=88.3 f=146.3", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(R2, 93%, {C10,C4}) | g=55.0 h=91.6 f=146.6", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=126.2 f=189.2", "(R6, 25%, {C10,C4,C6}) | g=81.0 h=81.6 f=162.6", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=143.0 f=217.0", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0", "(C7, 14%, {C10,C4,C6}) | g=86.0 h=155.0 f=241.0", "(C7, 31%, {C10,C4,C7}) | g=75.0 h=140.0 f=215.0", "(R2, 20%, {C10,C4,C6}) | g=86.0 h=81.6 f=167.6", "(C7, 19%, {C10,C4,C6}) | g=87.0 h=150.0 f=237.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3", "(C7, 33%, {C10,C4,C7}) | g=75.4 h=140.0 f=215.4"], ["(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(R2, 51%, {C10,C6}) | g=49.0 h=91.6 f=140.6", "(R2, 83%, {C10,C4}) | g=53.0 h=91.6 f=144.6", "(R2, 98%, {C10,C4}) | g=56.0 h=91.6 f=147.6", "(R2, 68%, {C10,C4}) | g=50.0 h=91.6 f=141.6", "(R2, 80%, {C10,C4}) | g=52.4 h=91.6 f=144.0", "(R2, 87%, {C10,C4}) | g=53.8 h=91.6 f=145.4", "(R2, 92%, {C10,C4}) | g=54.8 h=91.6 f=146.4", "(R2, 99%, {C10,C4}) | g=56.2 h=91.6 f=147.8", "(R2, 15%, {C10,C4,C6}) | g=85.0 h=84.0 f=169.0", "(R6, 20%, {C10,C4,C6}) | g=80.0 h=81.6 f=161.6", "(R2, 70%, {C10,C4}) | g=50.4 h=91.6 f=142.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3", "(R2, 82%, {C10,C4}) | g=52.8 h=91.6 f=144.4", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=140.0 f=192.0", "(C10, 42%, {C10,C6}) | g=58.0 h=88.3 f=146.3", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(R2, 93%, {C10,C4}) | g=55.0 h=91.6 f=146.6", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=126.2 f=189.2", "(R6, 25%, {C10,C4,C6}) | g=81.0 h=81.6 f=162.6", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=143.0 f=217.0", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0", "(C7, 14%, {C10,C4,C6}) | g=86.0 h=155.0 f=241.0", "(C7, 31%, {C10,C4,C7}) | g=75.0 h=140.0 f=215.0", "(R2, 20%, {C10,C4,C6}) | g=86.0 h=81.6 f=167.6", "(C7, 19%, {C10,C4,C6}) | g=87.0 h=150.0 f=237.0", "(C7, 33%, {C10,C4,C7}) | g=75.4 h=140.0 f=215.4", "(R2, 22%, {C10,C4,C6}) | g=86.4 h=81.6 f=168.0", "(C7, 21%, {C10,C4,C6}) | g=87.4 h=148.0 f=235.4", "(R6, 27%, {C10,C4,C6}) | g=81.4 h=81.6 f=163.0"], ["(R2, 51%, {C10,C6}) | g=49.0 h=91.6 f=140.6", "(R1, 63%, {C10,C4}) | g=55.0 h=88.3 f=143.3", "(R2, 68%, {C10,C4}) | g=50.0 h=91.6 f=141.6", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(R2, 98%, {C10,C4}) | g=56.0 h=91.6 f=147.6", "(R2, 70%, {C10,C4}) | g=50.4 h=91.6 f=142.0", "(R1, 61%, {C10,C4}) | g=54.6 h=88.3 f=142.9", "(R2, 83%, {C10,C4}) | g=53.0 h=91.6 f=144.6", "(R2, 92%, {C10,C4}) | g=54.8 h=91.6 f=146.4", "(R2, 99%, {C10,C4}) | g=56.2 h=91.6 f=147.8", "(R2, 15%, {C10,C4,C6}) | g=85.0 h=84.0 f=169.0", "(R6, 20%, {C10,C4,C6}) | g=80.0 h=81.6 f=161.6", "(R6, 27%, {C10,C4,C6}) | g=81.4 h=81.6 f=163.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3", "(R2, 80%, {C10,C4}) | g=52.4 h=91.6 f=144.0", "(R2, 87%, {C10,C4}) | g=53.8 h=91.6 f=145.4", "(C10, 42%, {C10,C6}) | g=58.0 h=88.3 f=146.3", "(R1, 98%, {C10,C4}) | g=62.0 h=88.3 f=150.3", "(R2, 93%, {C10,C4}) | g=55.0 h=91.6 f=146.6", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=126.2 f=189.2", "(R6, 25%, {C10,C4,C6}) | g=81.0 h=81.6 f=162.6", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=143.0 f=217.0", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0", "(C7, 14%, {C10,C4,C6}) | g=86.0 h=155.0 f=241.0", "(C7, 31%, {C10,C4,C7}) | g=75.0 h=140.0 f=215.0", "(R2, 20%, {C10,C4,C6}) | g=86.0 h=81.6 f=167.6", "(C7, 19%, {C10,C4,C6}) | g=87.0 h=150.0 f=237.0", "(C7, 33%, {C10,C4,C7}) | g=75.4 h=140.0 f=215.4", "(R2, 22%, {C10,C4,C6}) | g=86.4 h=81.6 f=168.0", "(C7, 21%, {C10,C4,C6}) | g=87.4 h=148.0 f=235.4", "(R2, 82%, {C10,C4}) | g=52.8 h=91.6 f=144.4", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=140.0 f=192.0", "(R1, 88%, {C10,C4}) | g=60.0 h=88.3 f=148.3", "(R1, 90%, {C10,C4}) | g=60.4 h=88.3 f=148.7", "(R1, 97%, {C10,C4}) | g=61.8 h=88.3 f=150.1", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(C1, 28%, {C1,C10,C4}) | g=72.0 h=105.0 f=177.0"], ["(C4, 32%, {C10,C4,C6}) | g=68.0 h=0.0 f=68.0", "(R2, 68%, {C10,C4}) | g=50.0 h=91.6 f=141.6", "(R2, 70%, {C10,C4}) | g=50.4 h=91.6 f=142.0", "(R1, 63%, {C10,C4}) | g=55.0 h=88.3 f=143.3", "(R2, 98%, {C10,C4}) | g=56.0 h=91.6 f=147.6", "(R6, 20%, {C10,C4,C6}) | g=80.0 h=81.6 f=161.6", "(R1, 61%, {C10,C4}) | g=54.6 h=88.3 f=142.9", "(R2, 83%, {C10,C4}) | g=53.0 h=91.6 f=144.6", "(C9, 65%, {C10,C9}) | g=35.0 h=109.0 f=144.0", "(R2, 99%, {C10,C4}) | g=56.2 h=91.6 f=147.8", "(R2, 15%, {C10,C4,C6}) | g=85.0 h=84.0 f=169.0", "(C1, 28%, {C1,C10,C4}) | g=72.0 h=105.0 f=177.0", "(R6, 27%, {C10,C4,C6}) | g=81.4 h=81.6 f=163.0", "(C10, 44%, {C10,C4}) | g=56.0 h=88.3 f=144.3", "(R2, 80%, {C10,C4}) | g=52.4 h=91.6 f=144.0", "(R2, 87%, {C10,C4}) | g=53.8 h=91.6 f=145.4", "(C10, 42%, {C10,C6}) | g=58.0 h=88.3 f=146.3", "(R2, 92%, {C10,C4}) | g=54.8 h=91.6 f=146.4", "(R2, 93%, {C10,C4}) | g=55.0 h=91.6 f=146.6", "(C11, 37%, {C10,C11,C6}) | g=63.0 h=126.2 f=189.2", "(R6, 25%, {C10,C4,C6}) | g=81.0 h=81.6 f=162.6", "(C7, 26%, {C10,C4,C7}) | g=74.0 h=143.0 f=217.0", "(C13, 72%, {C10,C13}) | g=28.0 h=150.0 f=178.0", "(C7, 14%, {C10,C4,C6}) | g=86.0 h=155.0 f=241.0", "(C7, 31%, {C10,C4,C7}) | g=75.0 h=140.0 f=215.0", "(R2, 20%, {C10,C4,C6}) | g=86.0 h=81.6 f=167.6", "(C7, 19%, {C10,C4,C6}) | g=87.0 h=150.0 f=237.0", "(C7, 33%, {C10,C4,C7}) | g=75.4 h=140.0 f=215.4", "(R2, 22%, {C10,C4,C6}) | g=86.4 h=81.6 f=168.0", "(C7, 21%, {C10,C4,C6}) | g=87.4 h=148.0 f=235.4", "(R2, 82%, {C10,C4}) | g=52.8 h=91.6 f=144.4", "(C7, 48%, {C10,C6,C7}) | g=52.0 h=140.0 f=192.0", "(R1, 88%, {C10,C4}) | g=60.0 h=88.3 f=148.3", "(R1, 90%, {C10,C4}) | g=60.4 h=88.3 f=148.7", "(R1, 97%, {C10,C4}) | g=61.8 h=88.3 f=150.1", "(C11, 76%, {C10,C11}) | g=24.0 h=136.2 f=160.2", "(R1, 98%, {C10,C4}) | g=62.0 h=88.3 f=150.3"]], "closed": [["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(C6, 69%, {C10,C6}) | g=31.0 h=80.0 f=111.0", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(C6, 69%, {C10,C6}) | g=31.0 h=80.0 f=111.0", "(R6, 56%, {C10,C6}) | g=44.0 h=91.6 f=135.6", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(C6, 69%, {C10,C6}) | g=31.0 h=80.0 f=111.0", "(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(R6, 56%, {C10,C6}) | g=44.0 h=91.6 f=135.6", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(C6, 33%, {C10,C4,C6}) | g=67.0 h=70.0 f=137.0", "(C6, 69%, {C10,C6}) | g=31.0 h=80.0 f=111.0", "(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(R6, 56%, {C10,C6}) | g=44.0 h=91.6 f=135.6", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(C6, 33%, {C10,C4,C6}) | g=67.0 h=70.0 f=137.0", "(C6, 69%, {C10,C6}) | g=31.0 h=80.0 f=111.0", "(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(R2, 58%, {C10,C4}) | g=48.0 h=91.6 f=139.6", "(R6, 56%, {C10,C6}) | g=44.0 h=91.6 f=135.6", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(C6, 33%, {C10,C4,C6}) | g=67.0 h=70.0 f=137.0", "(C6, 38%, {C10,C4,C6}) | g=68.0 h=70.0 f=138.0", "(C6, 69%, {C10,C6}) | g=31.0 h=80.0 f=111.0", "(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(R2, 58%, {C10,C4}) | g=48.0 h=91.6 f=139.6", "(R6, 56%, {C10,C6}) | g=44.0 h=91.6 f=135.6", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(C6, 33%, {C10,C4,C6}) | g=67.0 h=70.0 f=137.0", "(C6, 38%, {C10,C4,C6}) | g=68.0 h=70.0 f=138.0", "(C6, 69%, {C10,C6}) | g=31.0 h=80.0 f=111.0", "(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(R2, 58%, {C10,C4}) | g=48.0 h=91.6 f=139.6", "(R2, 60%, {C10,C4}) | g=48.4 h=91.6 f=140.0", "(R6, 56%, {C10,C6}) | g=44.0 h=91.6 f=135.6", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(C6, 33%, {C10,C4,C6}) | g=67.0 h=70.0 f=137.0", "(C6, 38%, {C10,C4,C6}) | g=68.0 h=70.0 f=138.0", "(C6, 40%, {C10,C4,C6}) | g=68.4 h=70.0 f=138.4", "(C6, 69%, {C10,C6}) | g=31.0 h=80.0 f=111.0", "(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(R2, 58%, {C10,C4}) | g=48.0 h=91.6 f=139.6", "(R2, 60%, {C10,C4}) | g=48.4 h=91.6 f=140.0", "(R6, 56%, {C10,C6}) | g=44.0 h=91.6 f=135.6", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(C6, 33%, {C10,C4,C6}) | g=67.0 h=70.0 f=137.0", "(C6, 38%, {C10,C4,C6}) | g=68.0 h=70.0 f=138.0", "(C6, 40%, {C10,C4,C6}) | g=68.4 h=70.0 f=138.4", "(C6, 69%, {C10,C6}) | g=31.0 h=80.0 f=111.0", "(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(R2, 58%, {C10,C4}) | g=48.0 h=91.6 f=139.6", "(R2, 60%, {C10,C4}) | g=48.4 h=91.6 f=140.0", "(R6, 56%, {C10,C6}) | g=44.0 h=91.6 f=135.6", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6"], ["(C10, 98%, {C10}) | g=2.0 h=98.3 f=100.3", "(C4, 70%, {C10,C4}) | g=30.0 h=10.0 f=40.0", "(C6, 33%, {C10,C4,C6}) | g=67.0 h=70.0 f=137.0", "(C6, 38%, {C10,C4,C6}) | g=68.0 h=70.0 f=138.0", "(C6, 40%, {C10,C4,C6}) | g=68.4 h=70.0 f=138.4", "(C6, 69%, {C10,C6}) | g=31.0 h=80.0 f=111.0", "(R1, 48%, {C10,C4}) | g=52.0 h=88.3 f=140.3", "(R2, 51%, {C10,C6}) | g=49.0 h=91.6 f=140.6", "(R2, 53%, {C10,C4}) | g=47.0 h=91.6 f=138.6", "(R2, 58%, {C10,C4}) | g=48.0 h=91.6 f=139.6", "(R2, 60%, {C10,C4}) | g=48.4 h=91.6 f=140.0", "(R6, 56%, {C10,C6}) | g=44.0 h=91.6 f=135.6", "(R6, 84%, {C10}) | g=16.0 h=101.6 f=117.6"]], "revisited": [], "expanded_later": [{"state": "(R6, 84%, {C10})", "added_step": 1, "expanded_step": 3, "g": 16.0}, {"state": "(R2, 53%, {C10,C4})", "added_step": 2, "expanded_step": 6, "g": 47.0}, {"state": "(R2, 58%, {C10,C4})", "added_step": 6, "expanded_step": 8, "g": 48.0}, {"state": "(R2, 60%, {C10,C4})", "added_step": 6, "expanded_step": 10, "g": 48.4}, {"state": "(R1, 48%, {C10,C4})", "added_step": 2, "expanded_step": 12, "g": 52.0}, {"state": "(R2, 51%, {C10,C6})", "added_step": 4, "expanded_step": 13, "g": 49.0}]};
+const START_NODE="C10";
+const GOAL_NODE="C4";
+
+function renderStats(){
+  const r=document.getElementById('stats-row');
+  const d=[
+    {l:'Bateria Final',v:STATS.finalBattery+'%'},
+    {l:'Estados Expandidos',v:STATS.expandedStates},
+    {l:'Minutos Operacionais',v:STATS.totalTime.toFixed(1)},
+    {l:'Coletas Realizadas',v:STATS.finalCollected},
+    {l:'Open final ativa',v:STATS.openListSize},
+    {l:'Closed final',v:STATS.closedListSize},
+    {l:'Estados gerados',v:STATS.treeEdges}
+  ];
+  r.innerHTML=d.map(x=>`<div class="stat-item"><div class="value">${x.v}</div><div class="label">${x.l}</div></div>`).join('');
+}
+function drawMap(){
+  const canvas=document.getElementById('mapCanvas');const ctx=canvas.getContext('2d');
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  NODES.forEach(n=>{minX=Math.min(minX,n.x);maxX=Math.max(maxX,n.x);minY=Math.min(minY,n.y);maxY=Math.max(maxY,n.y)});
+  const padding=40,cw=canvas.parentElement.clientWidth,rx=maxX-minX||1,ry=maxY-minY||1;
+  const scale=Math.min((cw-padding*2)/rx,400/ry),ch=ry*scale+padding*2;
+  canvas.width=cw*2;canvas.height=ch*2;canvas.style.height=ch+'px';ctx.scale(2,2);
+  function tx(x){return padding+(x-minX)*scale} function ty(y){return ch-padding-(y-minY)*scale}
+  
+  const pE=new Set(),pN=new Set();
+  for(let i=0;i<PATH.length;i++){pN.add(PATH[i].node);if(i>0)pE.add([PATH[i-1].node,PATH[i].node].sort().join('-'))}
+  
+  EDGES.forEach(e=>{
+    const nA=NODES.find(n=>n.id===e.from),nB=NODES.find(n=>n.id===e.to);
+    const isP=pE.has([e.from,e.to].sort().join('-'));
+    ctx.beginPath();ctx.moveTo(tx(nA.x),ty(nA.y));ctx.lineTo(tx(nB.x),ty(nB.y));
+    if(isP){ctx.strokeStyle='#2563eb';ctx.lineWidth=3;}
+    else{ctx.strokeStyle='#eaeaea';ctx.lineWidth=1;ctx.setLineDash([4,4]);}
+    ctx.stroke();ctx.setLineDash([]);
+    const mx=(tx(nA.x)+tx(nB.x))/2,my=(ty(nA.y)+ty(nB.y))/2;
+    ctx.font='10px "JetBrains Mono"';ctx.fillStyle=isP?'#2563eb':'#aaa';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(e.weight,mx,my-8);
+  });
+  
+  NODES.forEach(n=>{
+    const x=tx(n.x),y=ty(n.y),isP=pN.has(n.id);
+    const color=n.type==='collection'?'#ea580c':'#059669';
+    // Desenhando em círculo como solicitado
+    ctx.beginPath();ctx.arc(x,y,isP?20:16,0,2*Math.PI);
+    ctx.fillStyle=isP?color:'#fff'; ctx.fill();
+    ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
+    ctx.font='600 12px "Inter"';ctx.fillStyle=isP?'#fff':color;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n.id,x,y);
+  });
+}
+function renderPath(){
+  const c=document.getElementById('path-container');
+  if(!STATS.success){c.innerHTML='Caminho não encontrado.';return}
+  c.innerHTML=PATH.map((s,i)=>`<div class="path-step"><div class="p-node">Passo ${i}: ${s.node}</div><div class="p-act">${s.action}</div><div class="p-metrics"><span>Custo (g): ${s.g.toFixed(1)}</span><span>h(n): ${s.h.toFixed(1)}</span><span>f(n): ${s.f.toFixed(1)}</span><span>Bateria: ${s.battery}%</span><span>Coletas: ${s.numCollected}</span></div></div>`).join('');
+}
+function buildT(n){
+  const has=n.children&&n.children.length>0;
+  let cls=''; if(n.isSolution)cls=' is-sol';
+  let tog='<span class="tree-toggle"> </span>'; if(has)tog='<span class="tree-toggle" data-toggle>+</span>';
+  let ch=''; if(has)ch=`<div class="tree-kids open">${n.children.map(buildT).join('')}</div>`;
+  return `<div class="tree-node"><div class="tree-item${cls}">${tog}<span class="t-node">${n.node}</span><span class="t-data"> g:${n.g.toFixed(1)} | h:${n.h.toFixed(1)} | f:${n.f.toFixed(1)} | Bateria:${n.battery}% | Coletas:${n.numCollected}</span></div>${ch}</div>`;
+}
+function renderTree(){
+  const c=document.getElementById('tree-container');
+  if(!TREE)return;
+  c.innerHTML=buildT(TREE);
+  document.querySelectorAll('[data-toggle]').forEach(t=>t.addEventListener('click',function(e){
+    e.stopPropagation(); const p=this.closest('.tree-node').querySelector('.tree-kids');
+    if(p){p.classList.toggle('open'); this.textContent=p.classList.contains('open')?'+':'-';}
+  }));
+  let exp=true;
+  document.getElementById('btn-expand-all').addEventListener('click',function(){
+    exp=!exp; document.querySelectorAll('.tree-kids').forEach(k=>exp?k.classList.add('open'):k.classList.remove('open'));
+    document.querySelectorAll('[data-toggle]').forEach(t=>t.textContent=exp?'+':'-');
+    this.textContent=exp?'Recolher Tudo':'Expandir Tudo';
+  });
+}
+
+// Lightbox Logic
+function openLightbox(el) {
+  const svgContent = el.querySelector('svg');
+  if(svgContent) {
+    const lbContainer = document.getElementById('lb-content');
+    lbContainer.innerHTML = '';
+    const cloned = svgContent.cloneNode(true);
+    cloned.style.width = '100%';
+    cloned.style.height = '100%';
+    lbContainer.appendChild(cloned);
+  }
+  document.getElementById('lightbox').classList.add('active');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+  document.getElementById('lb-content').innerHTML = '';
+}
+
+function renderAnalysis() {
+  document.getElementById('h5-hstart').innerText = (STATS.hStart !== undefined) ? STATS.hStart.toFixed(1) : 'N/A';
+  document.getElementById('h5-cost').innerText = STATS.totalTime.toFixed(1);
+  document.getElementById('h5-expanded').innerText = STATS.expandedStates;
+  document.getElementById('h5-path-len').innerText = PATH.length;
+  
+  document.getElementById('h4-hstart').innerText = (STATS_H4.hStart !== undefined) ? STATS_H4.hStart.toFixed(1) : 'N/A';
+  document.getElementById('h4-cost').innerText = STATS_H4.totalTime.toFixed(1);
+  document.getElementById('h4-expanded').innerText = STATS_H4.expandedStates;
+  document.getElementById('h4-path-len').innerText = PATH_H4.length;
+  
+  function formatLog(hist) {
+    if(!hist || !hist.open || hist.open.length===0) return 'Nenhum histórico capturado.';
+    let txt = '';
+    // Pegar as ultimas 10 interacoes para nao travar o browser
+    let start = Math.max(0, hist.open.length - 10);
+    txt += `Exibindo as últimas ${hist.open.length - start} iterações (Total: ${hist.open.length} expansões realizadas):\n========================================================\n\n`;
+    for(let i=start; i<hist.open.length; i++) {
+       txt += `--- PASSO ${i+1} ---\n`;
+       txt += `[OPEN LIST] (${hist.open[i].length} estados não expandidos):\n${hist.open[i].join('\n')}\n\n`;
+       txt += `[CLOSED LIST] (${hist.closed[i].length} estados já expandidos):\n${hist.closed[i].join('\n')}\n\n`;
+    }
+    return txt;
+  }
+  
+  function formatRevisited(hist) {
+     let txt = 'Esse comportamento ocorre porque os estados permanecem na Open List até que se tornem os mais promissores segundo f(n)=g(n)+h(n). Assim, o algoritmo pode voltar a expandir estados gerados anteriormente, caso eles passem a ter a melhor prioridade entre as opções disponíveis.\n\n';
+     txt += 'Exemplos observados na execução (estados que esperaram na Open List):\n';
+     txt += '-'.repeat(100) + '\n';
+     if(hist && hist.expanded_later && hist.expanded_later.length > 0) {
+        hist.expanded_later.slice(0, 10).forEach(r => {
+           txt += `- ${r.state} entrou na Open List no passo ${r.added_step} e foi expandido apenas no passo ${r.expanded_step}, com g(n)=${r.g.toFixed(1)}.\n`;
+        });
+     } else {
+        txt += 'Não houve exemplos nesta execução específica.\n';
+     }
+     return txt;
+  }
+  
+  document.getElementById('btn-hist-h5').onclick = function() {
+    document.getElementById('history-log').innerText = formatLog(HIST_H5);
+    document.getElementById('revisited-log').innerText = formatRevisited(HIST_H5);
+  };
+  document.getElementById('btn-hist-h4').onclick = function() {
+    document.getElementById('history-log').innerText = formatLog(HIST_H4);
+    document.getElementById('revisited-log').innerText = formatRevisited(HIST_H4);
+  };
+  
+  function renderPossibleSolutions() {
+    const container = document.getElementById('topic4-container');
+    if(!container) return;
+
+    let html = `<p><strong>A Solução Escolhida (Ótima) - h5:</strong></p>`;
+    html += `<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; text-align: left;">`;
+    html += `<thead><tr style="background: var(--surface); border-bottom: 2px solid var(--border);"><th style="padding: 8px;">Passo</th><th style="padding: 8px;">Nó Atual</th><th style="padding: 8px;">Ação</th><th style="padding: 8px;">Custo (g)</th><th style="padding: 8px;">Bateria</th></tr></thead>`;
+    html += `<tbody>`;
+    PATH.forEach((step, idx) => {
+      html += `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 8px;">${idx}</td><td style="padding: 8px;">${step.node}</td><td style="padding: 8px; color: var(--text-mut);">${step.action}</td><td style="padding: 8px; color: var(--path); font-weight: bold;">${step.g.toFixed(1)}</td><td style="padding: 8px;">${step.battery}%</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    html += `<p style="margin-bottom: 16px;"><strong>Motivo da Escolha:</strong> Este caminho foi o primeiro a alcançar o destino tendo expandido sempre pelo menor custo <strong>f(n) = g(n) + h(n)</strong>, garantindo a otimalidade.</p>`;
+
+    html += `<p><strong>Outras Soluções Possíveis / Caminhos Explorados (Sub-ótimos na lista fechada ou abertos na Open List):</strong></p>`;
+    
+    // Find some alternative paths by traversing the tree
+    let altPaths = [];
+    function traverse(node, currentPath) {
+      currentPath.push(node);
+      if(!node.isSolution && (!node.children || node.children.length === 0)) {
+        if (currentPath.length > 2) {
+            altPaths.push([...currentPath]);
+        }
+      }
+      if(node.children) {
+        node.children.forEach(c => traverse(c, currentPath));
+      }
+      currentPath.pop();
+    }
+    traverse(TREE, []);
+    
+    // Sort by length descending, and pick 2 diverse ones
+    altPaths.sort((a,b) => b.length - a.length);
+    let selectedAlts = altPaths.slice(0, 3);
+
+    if (selectedAlts.length > 0) {
+        html += `<table style="width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; text-align: left;">`;
+        html += `<thead><tr style="background: rgba(234, 88, 12, 0.05); border-bottom: 2px solid var(--node-c);"><th style="padding: 8px;">Alternativa</th><th style="padding: 8px;">Caminho Parcial</th><th style="padding: 8px;">Custo f(n) no momento</th><th style="padding: 8px;">Status</th></tr></thead>`;
+        html += `<tbody>`;
+        selectedAlts.forEach((pathArr, idx) => {
+            let pathStr = pathArr.map(n => n.node).join(' -> ');
+            let lastNode = pathArr[pathArr.length-1];
+            let reason = lastNode.isExpanded ? "Expandida, mas o ramo provou ser sub-ótimo." : "Na Open List (f(n) maior que o caminho ótimo).";
+            html += `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 8px; font-weight: bold;">Alt ${idx+1}</td><td style="padding: 8px; color: var(--text-mut);">${pathStr} ...</td><td style="padding: 8px;">${lastNode.f.toFixed(1)}</td><td style="padding: 8px;">${reason}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+    } else {
+        html += `<p style="color: var(--text-mut);">A busca encontrou a solução rapidamente e não restaram ramos profundos o suficiente para exibir como alternativas completas.</p>`;
+    }
+
+    container.innerHTML = html;
+  }
+  
+  renderPossibleSolutions();
+
+  // click h5 by default
+  document.getElementById('btn-hist-h5').click();
+}
+
+function renderHeuristicTableRows(tbodyId, rows){
+  const tbody=document.getElementById(tbodyId);
+  if(!tbody || !STATS.success)return;
+  function fmt2(v){ return v.toFixed(2).replace('.', ','); }
+  tbody.innerHTML=rows.map((s,i)=>`
+    <tr style="border-bottom: 1px solid var(--border);">
+      <td style="padding: 10px 8px;">${i}</td>
+      <td style="padding: 10px 8px; font-family: 'JetBrains Mono';">(${s.node}, ${s.battery}%, {${s.collected}})</td>
+      <td style="padding: 10px 8px;">${s.action}</td>
+      <td style="padding: 10px 8px;">${fmt2(s.g)}</td>
+      <td style="padding: 10px 8px;">${s.remaining}</td>
+      <td style="padding: 10px 8px;">${fmt2(s.h_desloc)}</td>
+      <td style="padding: 10px 8px;">${fmt2(s.h_coleta)}</td>
+      <td style="padding: 10px 8px;">${fmt2(s.h_recarga)}</td>
+      <td style="padding: 10px 8px; color: var(--node-r); font-weight: bold;">${fmt2(s.h)}</td>
+      <td style="padding: 10px 8px; color: var(--node-c); font-weight: bold;">${fmt2(s.f)}</td>
+    </tr>
+  `).join('');
+}
+function renderHeuristicTable(){
+  renderHeuristicTableRows('heuristic-tbody', HEURISTIC_TABLE);
+  renderHeuristicTableRows('heuristic-h4-tbody', HEURISTIC_TABLE_H4);
+}
+renderStats();drawMap();renderPath();renderTree();renderHeuristicTable();
+renderAnalysis();
+window.addEventListener('resize',drawMap);
+
+</script>
+</body>
+</html>
